@@ -19,9 +19,12 @@ public:
 	
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
-
-
-
+	UFUNCTION()
+	void OnBeginOverlap(class AActor* OtherActor);
+	UPROPERTY(EditAnywhere)
+	AActor* SensorActor;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SensorName)
+	FString SensorName;
 
 
 	
