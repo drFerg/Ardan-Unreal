@@ -34,7 +34,7 @@ TArray<USpotLightComponent*> Leds;
 ATriggerBox* tb;
 
 void ASensor::OnBeginOverlap(class AActor* OtherActor) {
-	UE_LOG(LogNet, Log, TEXT("Overlap"));
+	UE_LOG(LogNet, Log, TEXT("%s detected someone"), *(this->GetName()));
 }
 
 ASensor::ASensor()
@@ -53,18 +53,6 @@ ASensor::ASensor()
 	} else {
 		UE_LOG(LogNet, Log, TEXT("I got nothing"));
 	}
-    //static ConstructorHelpers::FObjectFinder<UBlueprint> ItemBlueprint(TEXT("Blueprint'/Game/SensorNode.SensorNode'"));
-//    if (ItemBlueprint.Object){
-//    	UE_LOG(LogNet, Log, TEXT("Class: %s- %s"), *(ItemBlueprint.Object->GetBlueprintClass()->GetClass()->GetName()), (ItemBlueprint.Succeeded()?TEXT("Y"):TEXT("N")));
-//
-//        MyItemBlueprint = (UClass*) ItemBlueprint.Object->GeneratedClass;
-//
-//        if (MyItemBlueprint != NULL){
-//        	UE_LOG(LogNet, Log, TEXT("Name: %s"), *(MyItemBlueprint->GetClass()->GetName()));
-//        } else {
-//        	UE_LOG(LogNet, Log, TEXT("I got nothing"));
-//        }
-//    }
 
 	SensorActor = SpawnBP<AActor>(GetWorld(), MyItemBlueprint, this->GetActorLocation(), this->GetActorRotation());
 	if(SensorActor) {
@@ -112,5 +100,21 @@ void ASensor::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 
+}
+
+void ASensor::Led(int32 led, bool on)
+{
+	if (led > 3 && led < 0) return;
+	UE_LOG(LogNet, Log, TEXT("Node: %s"), *(SensorActor->GetName()))
+	UE_LOG(LogNet, Log, TEXT("Led: %s (%i)"), *(Leds[led]->GetName()), led);
+	Leds[led]->SetIntensity(on ? LEDON : LEDOFF);
+}
+
+void ASensor::SetLed(uint8 R, uint8 G, uint8 B)
+{
+	//UE_LOG(LogNet, Log, TEXT("Node: %s"), *(actor->GetName()))
+	Leds[0]->SetIntensity(R ? LEDON : LEDOFF);
+	Leds[1]->SetIntensity(G ? LEDON : LEDOFF);
+	Leds[2]->SetIntensity(B ? LEDON : LEDOFF);
 }
 
