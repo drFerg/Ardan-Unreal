@@ -23,7 +23,7 @@ int port = 5000;
 
 /** Local address this net driver is associated with */
 
-TSharedRef<FInternetAddr> fromAddr = sockSubSystem->CreateInternetAddr();
+
 
 /* Storage to receive Cooja packets into */
 uint8 data[MAX_PACKET_SIZE];
@@ -45,7 +45,9 @@ void AConnections::BeginPlay()
 
 	/* Initialise networking */
 	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
-	bUDPActive = Network::createSocket(sockSubSystem, true, port);
+	socket = Network::createSocket(sockSubSystem, port, true);
+	if (socket != NULL) bUDPActive = true;
+
 	UE_LOG(LogNet, Log, TEXT("UDPActive: %s"),
 			bUDPActive ? TEXT("Active"): TEXT("Not Active"));
 
@@ -72,7 +74,7 @@ void AConnections::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	if (bUDPActive == false) return;
-
+	TSharedRef<FInternetAddr> fromAddr = sockSubSystem->CreateInternetAddr();
 	/* Get data, if any. */
  	while (socket->RecvFrom(data, MAX_PACKET_SIZE, bytesRead, *fromAddr)){
  		sensors[data[0]]->SetLed(data[1], data[2], data[3]);
