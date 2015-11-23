@@ -3,6 +3,14 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "Engine/TriggerBox.h"
+#include "IPAddress.h"
+#include "IPv4SubnetMask.h"
+
+#include "IPv4Address.h"
+#include "Sockets.h"
+#include "SocketSubsystem.h"
+#include "Engine/Channel.h"
 #include "Sensor.generated.h"
 
 UCLASS()
@@ -23,11 +31,19 @@ public:
 	void SetLed(uint8 R, uint8 G, uint8 B);
 	UFUNCTION()
 	void OnBeginOverlap(class AActor* OtherActor);
-
+	UFUNCTION()
+	void OnEndOverlap(class AActor* OtherActor);
 	UPROPERTY(EditAnywhere)
 	AActor* SensorActor;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SensorName)
 	FString SensorName;
+
+private:
+	TArray<USpotLightComponent*> Leds;
+	ATriggerBox* tb;
+	ISocketSubsystem* sockSubSystem;
+	FSocket* socket;
+
 
 
 	

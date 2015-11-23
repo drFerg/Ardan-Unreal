@@ -51,7 +51,7 @@ void AConnections::BeginPlay()
 	UE_LOG(LogNet, Log, TEXT("UDPActive: %s"),
 			bUDPActive ? TEXT("Active"): TEXT("Not Active"));
 
-	/* Find all sensors in the world to handles connections to Cooja */
+	/* Find all sensors in the world to handle connections to Cooja */
  	for (TActorIterator<ASensor> ActorItr(GetWorld()); ActorItr; ++ActorItr)
 	{
 		if (ActorItr->GetClass() == ASensor::StaticClass()) {
