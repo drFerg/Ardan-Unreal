@@ -43,7 +43,7 @@ private:
 	ATriggerBox* tb;
 	ISocketSubsystem* sockSubSystem;
 	FSocket* socket;
-
+	int32 port = 5010;
 
 
 	

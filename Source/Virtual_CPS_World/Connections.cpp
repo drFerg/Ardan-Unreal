@@ -77,6 +77,8 @@ void AConnections::Tick(float DeltaTime)
 	TSharedRef<FInternetAddr> fromAddr = sockSubSystem->CreateInternetAddr();
 	/* Get data, if any. */
  	while (socket->RecvFrom(data, MAX_PACKET_SIZE, bytesRead, *fromAddr)){
+ 		UE_LOG(LogNet, Log, TEXT("RCV: node %i"), data[0]);
+ 		if (data[0] >= sensors.Num()) continue;
  		sensors[data[0]]->SetLed(data[1], data[2], data[3]);
  	}
 }

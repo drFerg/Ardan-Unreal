@@ -41,7 +41,7 @@ TSubclassOf<UBlueprint> MyItemBlueprint;
 FIPv4Address ip;
 TSharedPtr<FInternetAddr> addr;
 FString address = TEXT("127.0.0.1");
-int32 port = 5010;
+
 
 void ASensor::OnBeginOverlap(class AActor* OtherActor) {
 	UE_LOG(LogNet, Log, TEXT("%s detected someone"), *(this->GetName()));
@@ -127,16 +127,32 @@ ASensor::ASensor()
 void ASensor::BeginPlay()
 {
 	Super::BeginPlay();
+
 	TArray<AActor*> attachedActors;
 	//tb = SensorActor->GetComponentByClass(ATriggerBox);
-	SensorActor->GetAttachedActors(attachedActors);
-	for (AActor *a: attachedActors) {
-		UE_LOG(LogNet, Log, TEXT("%s"), *(a->GetName()));
-		if (a->GetClass() == ATriggerBox::StaticClass()){
-			UE_LOG(LogNet, Log, TEXT("Found: %s"), *(a->GetName()));
-			tb = (ATriggerBox*) a;
-			tb->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
+	if(SensorActor) {
+		SensorActor->GetAttachedActors(attachedActors);
+		for (AActor *a: attachedActors) {
+			UE_LOG(LogNet, Log, TEXT("%s"), *(a->GetName()));
+			if (a->GetClass() == ATriggerBox::StaticClass()){
+				UE_LOG(LogNet, Log, TEXT("Found: %s"), *(a->GetName()));
+				tb = (ATriggerBox*) a;
+				tb->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
+			}
 		}
+		/* Retrieve all the LEDS and turn them OFF */
+		Leds.Empty();
+		UE_LOG(LogNet, Log, TEXT("Sensor: %s"), *(SensorActor->GetName()))
+		SensorActor->GetComponents(Leds);
+		for (USpotLightComponent *l: Leds) {
+			if (l == NULL) continue;
+			UE_LOG(LogNet, Log, TEXT("%s owned by %s"), *(l->GetName()),
+					*(l->GetOwner()->GetName()));
+			l->SetIntensity(LEDOFF);
+		}
+	}
+	else {
+		UE_LOG(LogNet, Log, TEXT("Node: Not spawned"));
 	}
 }
 
@@ -144,7 +160,6 @@ void ASensor::BeginPlay()
 void ASensor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void ASensor::Led(int32 led, bool on)
