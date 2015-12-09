@@ -2,6 +2,7 @@
 
 #include "Virtual_CPS_World.h"
 #include "Engine/TriggerBox.h"
+#include "Engine/StaticMeshActor.h"
 #include "Sensor.h"
 #include "IPAddress.h"
 #include "IPv4SubnetMask.h"
@@ -44,7 +45,7 @@ FString address = TEXT("127.0.0.1");
 
 
 void ASensor::OnBeginOverlap(class AActor* OtherActor) {
-	UE_LOG(LogNet, Log, TEXT("%s detected someone"), *(this->GetName()));
+	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(OtherActor->GetName()));
 	int sent = 0;
 	int size = 3;
 	uint8 data[3] = {0, 0, 1};
@@ -53,7 +54,7 @@ void ASensor::OnBeginOverlap(class AActor* OtherActor) {
 }
 
 void ASensor::OnEndOverlap(class AActor* OtherActor) {
-	UE_LOG(LogNet, Log, TEXT("%s detected someone"), *(this->GetName()));
+	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(OtherActor->GetName()));
 	int sent = 0;
 	int size = 3;
 	uint8 data[3] = {0, 0, 0};
@@ -129,16 +130,24 @@ void ASensor::BeginPlay()
 	Super::BeginPlay();
 
 	TArray<AActor*> attachedActors;
-	//tb = SensorActor->GetComponentByClass(ATriggerBox);
+
 	if(SensorActor) {
 		SensorActor->GetAttachedActors(attachedActors);
 		for (AActor *a: attachedActors) {
-			UE_LOG(LogNet, Log, TEXT("%s"), *(a->GetName()));
-			if (a->GetClass() == ATriggerBox::StaticClass()){
-				UE_LOG(LogNet, Log, TEXT("Found: %s"), *(a->GetName()));
-				tb = (ATriggerBox*) a;
+			UE_LOG(LogNet, Log, TEXT("%s:%s"), *(a->GetName()), *(a->GetClass()->GetName()));
+			/* Find a trigger volume aka PIR Sensor */
+			if (a->GetClass() == AStaticMeshActor::StaticClass()){
+				UE_LOG(LogNet, Log, TEXT("Found a Cone Sensor: %s"), *(a->GetName()));
+				tb = (ATriggerBase*) a;
 				tb->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
+				tb->OnActorEndOverlap.AddDynamic(this, &ASensor::OnEndOverlap);
 			}
+//			if (a->GetClass()->IsChildOf(ATriggerBase::StaticClass())){
+//				UE_LOG(LogNet, Log, TEXT("Found a PIR Sensor: %s"), *(a->GetName()));
+//				tb = (ATriggerBase*) a;
+//				tb->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
+//				tb->OnActorEndOverlap.AddDynamic(this, &ASensor::OnEndOverlap);
+//			}
 		}
 		/* Retrieve all the LEDS and turn them OFF */
 		Leds.Empty();
@@ -160,6 +169,8 @@ void ASensor::BeginPlay()
 void ASensor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	/* Check if actors located within PIR detection range have moved,
+	 * checking their current location vs previous */
 }
 
 void ASensor::Led(int32 led, bool on)
