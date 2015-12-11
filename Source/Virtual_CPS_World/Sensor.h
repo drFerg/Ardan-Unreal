@@ -4,9 +4,10 @@
 
 #include "GameFramework/Actor.h"
 #include "Engine/TriggerBox.h"
+#include "Engine/StaticMeshActor.h"
+
 #include "IPAddress.h"
 #include "IPv4SubnetMask.h"
-
 #include "IPv4Address.h"
 #include "Sockets.h"
 #include "SocketSubsystem.h"
@@ -33,10 +34,15 @@ public:
 	void OnBeginOverlap(class AActor* OtherActor);
 	UFUNCTION()
 	void OnEndOverlap(class AActor* OtherActor);
-	UPROPERTY(EditAnywhere)
-	AActor* SensorActor;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SensorName)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
 	FString SensorName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
+	AActor* SensorActor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
+	AStaticMeshActor* PIRSensor;
 
 private:
 	TArray<USpotLightComponent*> Leds;
