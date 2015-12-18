@@ -5,6 +5,8 @@
 #include "Virtual_CPS_WorldPlayerController.h"
 #include "Virtual_CPS_WorldCharacter.h"
 
+uint8 CPS_sensorID = 0;
+
 AVirtual_CPS_WorldGameMode::AVirtual_CPS_WorldGameMode()
 {
 	// use our custom PlayerController class
@@ -16,4 +18,8 @@ AVirtual_CPS_WorldGameMode::AVirtual_CPS_WorldGameMode()
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
+}
+
+int AVirtual_CPS_WorldGameMode::getNewSensorID() {
+	return CPS_sensorID++;
 }

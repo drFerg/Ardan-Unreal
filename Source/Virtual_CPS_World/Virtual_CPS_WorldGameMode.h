@@ -10,6 +10,7 @@ class AVirtual_CPS_WorldGameMode : public AGameMode
 
 public:
 	AVirtual_CPS_WorldGameMode();
+	int getNewSensorID();
 };
 
 

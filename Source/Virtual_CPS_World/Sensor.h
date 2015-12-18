@@ -5,6 +5,7 @@
 #include "GameFramework/Actor.h"
 #include "Engine/TriggerBox.h"
 #include "Engine/StaticMeshActor.h"
+#include "Engine/Light.h"
 
 #include "IPAddress.h"
 #include "IPv4SubnetMask.h"
@@ -44,12 +45,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
 	AStaticMeshActor* PIRSensor;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
+	uint8 ID = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedOutput)
+	ALight* Light1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedOutput)
+	ALight* Light2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedOutput)
+	ALight* Light3;
 private:
 	TArray<USpotLightComponent*> Leds;
 	ATriggerBase* tb;
 	ISocketSubsystem* sockSubSystem;
 	FSocket* socket;
-	int32 port = 5010;
+	int32 port = 5011;
 
 
 	

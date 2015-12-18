@@ -1,6 +1,7 @@
 // Author: Fergus Leahy
 
 #include "Virtual_CPS_World.h"
+#include "Virtual_CPS_WorldGameMode.h"
 #include "Engine/TriggerBox.h"
 #include "Sensor.h"
 #include "IPAddress.h"
@@ -53,7 +54,7 @@ void ASensor::OnBeginOverlap(class AActor* otherActor) {
 	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	int sent = 0;
 	int size = 3;
-	uint8 data[3] = {0, 0, 1};
+	uint8 data[3] = {ID, 0, 1};
 	bool successful = socket->SendTo(data, size, sent, *addr);
 	UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
@@ -63,7 +64,7 @@ void ASensor::OnEndOverlap(class AActor* otherActor) {
 	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	int sent = 0;
 	int size = 3;
-	uint8 data[3] = {0, 0, 0};
+	uint8 data[3] = {ID, 0, 0};
 	bool successful = socket->SendTo(data, size, sent, *addr);
 	UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
@@ -110,9 +111,10 @@ ASensor::ASensor()
 		}
 	}
 	else {
-		UE_LOG(LogNet, Log, TEXT("SeName:Not spawned"));
+		UE_LOG(LogNet, Log, TEXT("SeName:Not spawned!"));
 	}
-
+//	AVirtual_CPS_WorldGameMode* gm = ((AVirtual_CPS_WorldGameMode*)GetWorld()->GetAuthGameMode());
+//	if (gm)	ID = ((AVirtual_CPS_WorldGameMode*)GetWorld()->GetAuthGameMode())->getNewSensorID();
 	/* Networking setup */
 	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
 	socket = sockSubSystem->CreateSocket(NAME_DGram, TEXT("UDPCONN2"), true);
@@ -180,6 +182,9 @@ void ASensor::SetLed(uint8 R, uint8 G, uint8 B)
 	Leds[0]->SetIntensity(R ? LEDON : LEDOFF);
 	Leds[1]->SetIntensity(G ? LEDON : LEDOFF);
 	Leds[2]->SetIntensity(B ? LEDON : LEDOFF);
+	if (Light1) Light1->GetLightComponent()->SetIntensity(R ? 50000: LEDOFF);
+	if (Light2) Light2->GetLightComponent()->SetIntensity(R ? 50000: LEDOFF);
+	if (Light3) Light3->GetLightComponent()->SetIntensity(R ? 50000: LEDOFF);
 }
 
 //		for (AActor *a: attachedActors) {
