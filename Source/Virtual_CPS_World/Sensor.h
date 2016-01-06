@@ -31,6 +31,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	void Led(int32 led, bool on);
 	void SetLed(uint8 R, uint8 G, uint8 B);
+	FVector GetSensorLocation();
 	UFUNCTION()
 	void OnBeginOverlap(class AActor* OtherActor);
 	UFUNCTION()

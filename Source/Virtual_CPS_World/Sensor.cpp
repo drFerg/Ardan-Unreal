@@ -141,8 +141,10 @@ void ASensor::BeginPlay()
 
 	if(SensorActor) {
 		SensorActor->GetAttachedActors(attachedActors);
-		PIRSensor->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
-		PIRSensor->OnActorEndOverlap.AddDynamic(this, &ASensor::OnEndOverlap);
+		if (PIRSensor) {
+			PIRSensor->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
+			PIRSensor->OnActorEndOverlap.AddDynamic(this, &ASensor::OnEndOverlap);
+		}
 		/* Retrieve all the LEDS and turn them OFF */
 		Leds.Empty();
 		UE_LOG(LogNet, Log, TEXT("Sensor: %s"), *(SensorActor->GetName()))
@@ -187,6 +189,10 @@ void ASensor::SetLed(uint8 R, uint8 G, uint8 B)
 	if (Light3) Light3->GetLightComponent()->SetIntensity(R ? 50000: LEDOFF);
 }
 
+
+FVector ASensor::GetSensorLocation() {
+	return SensorActor->GetActorLocation();
+}
 //		for (AActor *a: attachedActors) {
 //			UE_LOG(LogNet, Log, TEXT("%s:%s"), *(a->GetName()), *(a->GetClass()->GetName()));
 //			/* Find a trigger volume aka PIR Sensor */

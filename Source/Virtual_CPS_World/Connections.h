@@ -5,10 +5,13 @@
 #include "Components/ActorComponent.h"
 #include "Connections.generated.h"
 
+#define LED_PKT 0
+#define RADIO_PKT 1
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class VIRTUAL_CPS_WORLD_API AConnections : public AActor
 {
+
 	GENERATED_BODY()
 
 public:	
