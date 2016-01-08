@@ -47,7 +47,7 @@ public:
 	AStaticMeshActor* PIRSensor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
-	uint8 ID = 0;
+	int32 ID = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedOutput)
 	ALight* Light1;
@@ -55,12 +55,20 @@ public:
 	ALight* Light2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedOutput)
 	ALight* Light3;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Network)
+	int32 port = 5011;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Network)
+	FString address = TEXT("127.0.0.1");
+
 private:
 	TArray<USpotLightComponent*> Leds;
 	ATriggerBase* tb;
 	ISocketSubsystem* sockSubSystem;
 	FSocket* socket;
-	int32 port = 5011;
+	FVector prevLocation;
+
+	void sendLocationUpdate();
 
 
 	

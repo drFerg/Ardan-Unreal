@@ -14,6 +14,9 @@
 #include <Vector.h>
 #include <Map.h>
 
+#include <flatbuffers/flatbuffers.h>
+#include "unrealpkts_generated.h"
+
 #define LEDON 10000
 #define LEDOFF 0
 
@@ -43,29 +46,47 @@ VictoryObjType* SpawnBP(
 TSubclassOf<UBlueprint> MyItemBlueprint;
 FIPv4Address ip;
 TSharedPtr<FInternetAddr> addr;
-FString address = TEXT("127.0.0.1");
+int32 RecvSize = 0x8000;
+int32 SendSize = 0x8000;
+
 TArray<AActor*> inMotionRange;
 TMap<AActor*, FVector> inMotionPos; /* Contains actor as key and old location */
+flatbuffers::FlatBufferBuilder fbb;
+UnrealCoojaMsg::MessageBuilder msg(fbb);
 
 
 void ASensor::OnBeginOverlap(class AActor* otherActor) {
 	/* Start motion tracking the overlapping otherActor */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
 	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	fbb.Clear();
+
+	msg.add_id(ID);
+	msg.add_type(UnrealCoojaMsg::MsgType_PIR);
+	//msg.add_pir()
+	auto mloc = msg.Finish();
+	fbb.Finish(mloc);
+
 	int sent = 0;
-	int size = 3;
-	uint8 data[3] = {ID, 0, 1};
-	bool successful = socket->SendTo(data, size, sent, *addr);
+	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
+									 sent, *addr);
 	UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
 
 void ASensor::OnEndOverlap(class AActor* otherActor) {
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
 	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	fbb.Clear();
+
+	msg.add_id(ID);
+	msg.add_type(UnrealCoojaMsg::MsgType_PIR);
+	//msg.add_pir()
+	auto mloc = msg.Finish();
+	fbb.Finish(mloc);
+
 	int sent = 0;
-	int size = 3;
-	uint8 data[3] = {ID, 0, 0};
-	bool successful = socket->SendTo(data, size, sent, *addr);
+	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
+										 sent, *addr);
 	UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
 
@@ -115,16 +136,15 @@ ASensor::ASensor()
 	}
 //	AVirtual_CPS_WorldGameMode* gm = ((AVirtual_CPS_WorldGameMode*)GetWorld()->GetAuthGameMode());
 //	if (gm)	ID = ((AVirtual_CPS_WorldGameMode*)GetWorld()->GetAuthGameMode())->getNewSensorID();
+
 	/* Networking setup */
 	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
 	socket = sockSubSystem->CreateSocket(NAME_DGram, TEXT("UDPCONN2"), true);
 	if (socket) UE_LOG(LogNet, Log, TEXT("Created Socket"));
-	int32 RecvSize = 0x8000;
-	int32 SendSize = 0x8000;
 	socket->SetReceiveBufferSize(RecvSize, RecvSize);
 	socket->SetSendBufferSize(SendSize, SendSize);
 
-	/* Set up address:port to send Cooja messages to */
+	/* Set up destination address:port to send Cooja messages to */
 	FIPv4Address::Parse(address, ip);
 	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	addr->SetIp(ip.GetValue());
@@ -159,6 +179,10 @@ void ASensor::BeginPlay()
 	else {
 		UE_LOG(LogNet, Log, TEXT("Node: Not spawned"));
 	}
+	prevLocation = SensorActor->GetActorLocation();
+	sendLocationUpdate();
+	UE_LOG(LogNet, Log, TEXT("%d %s"), ID,
+				*(SensorActor->GetActorLocation().ToString()));
 }
 
 // Called every frame
@@ -167,6 +191,11 @@ void ASensor::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	/* Check if actors located within PIR detection range have moved,
 	 * checking their current location vs previous */
+
+	if (prevLocation.Equals(SensorActor->GetActorLocation(), 10) == false) {
+		sendLocationUpdate();
+		prevLocation = SensorActor->GetActorLocation();
+	}
 
 }
 
@@ -192,6 +221,23 @@ void ASensor::SetLed(uint8 R, uint8 G, uint8 B)
 
 FVector ASensor::GetSensorLocation() {
 	return SensorActor->GetActorLocation();
+}
+
+void ASensor::sendLocationUpdate() {
+	FVector locVec = SensorActor->GetActorLocation();
+
+	fbb.Clear();
+
+	msg.add_id(ID);
+	msg.add_type(UnrealCoojaMsg::MsgType_LOCATION);
+	msg.add_location(new UnrealCoojaMsg::Vec3(locVec.X, locVec.Y, locVec.Z));
+	auto mloc = msg.Finish();
+	fbb.Finish(mloc);
+
+	int sent = 0;
+	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
+									 sent, *addr);
+	UE_LOG(LogNet, Log, TEXT("Loc update %d"), ID);
 }
 //		for (AActor *a: attachedActors) {
 //			UE_LOG(LogNet, Log, TEXT("%s:%s"), *(a->GetName()), *(a->GetClass()->GetName()));

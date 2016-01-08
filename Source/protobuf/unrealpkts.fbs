@@ -1,0 +1,17 @@
+namespace UnrealCoojaMsg;
+
+
+enum MsgType : byte { LED = 1, LOCATION, RADIO, PIR }
+
+struct Vec3 {
+  x:float;
+  y:float;
+  z:float;
+}
+
+
+table Message {
+  id:int;
+  type:int;
+  location:Vec3;
+}
