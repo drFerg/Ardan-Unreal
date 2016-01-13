@@ -51,8 +51,7 @@ int32 SendSize = 0x8000;
 
 TArray<AActor*> inMotionRange;
 TMap<AActor*, FVector> inMotionPos; /* Contains actor as key and old location */
-flatbuffers::FlatBufferBuilder fbb;
-UnrealCoojaMsg::MessageBuilder msg(fbb);
+
 
 
 void ASensor::OnBeginOverlap(class AActor* otherActor) {
@@ -60,6 +59,7 @@ void ASensor::OnBeginOverlap(class AActor* otherActor) {
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
 	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	fbb.Clear();
+	UnrealCoojaMsg::MessageBuilder msg(fbb);
 
 	msg.add_id(ID);
 	msg.add_type(UnrealCoojaMsg::MsgType_PIR);
@@ -77,6 +77,7 @@ void ASensor::OnEndOverlap(class AActor* otherActor) {
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
 	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	fbb.Clear();
+	UnrealCoojaMsg::MessageBuilder msg(fbb);
 
 	msg.add_id(ID);
 	msg.add_type(UnrealCoojaMsg::MsgType_PIR);
@@ -183,6 +184,7 @@ void ASensor::BeginPlay()
 	sendLocationUpdate();
 	UE_LOG(LogNet, Log, TEXT("%d %s"), ID,
 				*(SensorActor->GetActorLocation().ToString()));
+	sendLocationUpdate();
 }
 
 // Called every frame
@@ -227,6 +229,7 @@ void ASensor::sendLocationUpdate() {
 	FVector locVec = SensorActor->GetActorLocation();
 
 	fbb.Clear();
+	UnrealCoojaMsg::MessageBuilder msg(fbb);
 
 	msg.add_id(ID);
 	msg.add_type(UnrealCoojaMsg::MsgType_LOCATION);
@@ -237,7 +240,7 @@ void ASensor::sendLocationUpdate() {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 									 sent, *addr);
-	UE_LOG(LogNet, Log, TEXT("Loc update %d"), ID);
+	UE_LOG(LogNet, Log, TEXT("Loc update %d (%i-%i)"), ID, successful, sent);
 }
 //		for (AActor *a: attachedActors) {
 //			UE_LOG(LogNet, Log, TEXT("%s:%s"), *(a->GetName()), *(a->GetClass()->GetName()));

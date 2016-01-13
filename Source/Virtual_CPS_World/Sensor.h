@@ -13,7 +13,12 @@
 #include "Sockets.h"
 #include "SocketSubsystem.h"
 #include "Engine/Channel.h"
+
+#include <flatbuffers/flatbuffers.h>
+#include "unrealpkts_generated.h"
+
 #include "Sensor.generated.h"
+
 
 UCLASS()
 class VIRTUAL_CPS_WORLD_API ASensor : public AActor
@@ -67,6 +72,7 @@ private:
 	ISocketSubsystem* sockSubSystem;
 	FSocket* socket;
 	FVector prevLocation;
+	flatbuffers::FlatBufferBuilder fbb;
 
 	void sendLocationUpdate();
 
