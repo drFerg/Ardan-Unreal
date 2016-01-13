@@ -41,6 +41,7 @@ public:
 	void OnBeginOverlap(class AActor* OtherActor);
 	UFUNCTION()
 	void OnEndOverlap(class AActor* OtherActor);
+	void SetSelected();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
 	FString SensorName;

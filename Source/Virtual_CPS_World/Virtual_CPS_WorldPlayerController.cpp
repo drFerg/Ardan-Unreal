@@ -3,11 +3,20 @@
 #include "Virtual_CPS_World.h"
 #include "Virtual_CPS_WorldPlayerController.h"
 #include "AI/Navigation/NavigationSystem.h"
+#include "Sensor.h"
+#include "DrawDebugHelpers.h"
 
 AVirtual_CPS_WorldPlayerController::AVirtual_CPS_WorldPlayerController()
 {
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
+	UBlueprint* blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/SensorNode.SensorNode'")));
+	sensorBlueprint = (UClass*)(blueprint->GeneratedClass);
+	if (sensorBlueprint != NULL) {
+		UE_LOG(LogNet, Log, TEXT("BName: %s"), *(sensorBlueprint->GetClass()->GetName()));
+	} else {
+		UE_LOG(LogNet, Log, TEXT("I got nothing"));
+	}
 }
 
 void AVirtual_CPS_WorldPlayerController::PlayerTick(float DeltaTime)
@@ -18,6 +27,11 @@ void AVirtual_CPS_WorldPlayerController::PlayerTick(float DeltaTime)
 	if (bMoveToMouseCursor)
 	{
 		MoveToMouseCursor();
+	}
+	if (bSelectItem) {
+		selectItem();
+
+		bSelectItem = false;
 	}
 }
 
@@ -32,6 +46,8 @@ void AVirtual_CPS_WorldPlayerController::SetupInputComponent()
 	// support touch devices 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::MoveToTouchLocation);
 	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &AVirtual_CPS_WorldPlayerController::MoveToTouchLocation);
+
+	InputComponent->BindAction("SelectItem", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::OnSelectItemPressed);
 }
 
 void AVirtual_CPS_WorldPlayerController::MoveToMouseCursor()
@@ -39,7 +55,6 @@ void AVirtual_CPS_WorldPlayerController::MoveToMouseCursor()
 	// Trace to see what is under the mouse cursor
 	FHitResult Hit;
 	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
-
 	if (Hit.bBlockingHit)
 	{
 		// We hit something, move there
@@ -88,3 +103,23 @@ void AVirtual_CPS_WorldPlayerController::OnSetDestinationReleased()
 	// clear flag to indicate we should stop updating the destination
 	bMoveToMouseCursor = false;
 }
+
+void AVirtual_CPS_WorldPlayerController::OnSelectItemPressed()
+{
+	bSelectItem = true;
+
+}
+
+void AVirtual_CPS_WorldPlayerController::selectItem() {
+	FHitResult Hit;
+	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+	AActor *item = Hit.GetActor();
+	if (item != NULL) {
+		if (item->GetClass()->GetName().Compare(sensorBlueprint->GetName()) == 0){
+			UE_LOG(LogNet, Log, TEXT("Clicked %s"), *(item->GetActorLabel()));
+			ASensor *sensorActor = (ASensor *)item->GetAttachParentActor();
+			DrawDebugCircle(GetWorld(), item->GetActorLocation(), 150.0, 360, FColor(0, 255, 0), false, 0.3, 0, 5, FVector(0.f,1.f,0.f), FVector(0.f,0.f,1.f), false);
+		}
+	}
+}
+

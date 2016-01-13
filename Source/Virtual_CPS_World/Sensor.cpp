@@ -16,6 +16,8 @@
 
 #include <flatbuffers/flatbuffers.h>
 #include "unrealpkts_generated.h"
+#include "DrawDebugHelpers.h"
+
 
 #define LEDON 10000
 #define LEDOFF 0
@@ -43,7 +45,6 @@ VictoryObjType* SpawnBP(
 		return TheWorld->SpawnActor<VictoryObjType>(TheBP, Loc ,Rot, SpawnInfo);
 	}
 
-TSubclassOf<UBlueprint> MyItemBlueprint;
 FIPv4Address ip;
 TSharedPtr<FInternetAddr> addr;
 int32 RecvSize = 0x8000;
@@ -220,6 +221,9 @@ void ASensor::SetLed(uint8 R, uint8 G, uint8 B)
 	if (Light3) Light3->GetLightComponent()->SetIntensity(R ? 50000: LEDOFF);
 }
 
+void ASensor::SetSelected() {
+	DrawDebugCircle(GetWorld(), SensorActor->GetActorLocation(), 150.0, 360, FColor(0, 255, 0), false, 0.3, 0, 5, FVector(0.f,1.f,0.f), FVector(0.f,0.f,1.f), false);
+}
 
 FVector ASensor::GetSensorLocation() {
 	return SensorActor->GetActorLocation();
