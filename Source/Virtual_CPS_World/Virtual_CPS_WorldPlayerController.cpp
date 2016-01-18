@@ -2,9 +2,15 @@
 
 #include "Virtual_CPS_World.h"
 #include "Virtual_CPS_WorldPlayerController.h"
+#include "Virtual_CPS_WorldCharacter.h"
 #include "AI/Navigation/NavigationSystem.h"
 #include "Sensor.h"
 #include "DrawDebugHelpers.h"
+
+#if WITH_EDITOR
+ #include "UnrealEd.h"
+ #endif
+
 
 AVirtual_CPS_WorldPlayerController::AVirtual_CPS_WorldPlayerController()
 {
@@ -48,6 +54,34 @@ void AVirtual_CPS_WorldPlayerController::SetupInputComponent()
 	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &AVirtual_CPS_WorldPlayerController::MoveToTouchLocation);
 
 	InputComponent->BindAction("SelectItem", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::OnSelectItemPressed);
+
+	InputComponent->BindAction("ScrollUp", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::ScrollUp);
+	InputComponent->BindAction("ScrollDown", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::ScrollDown);
+
+	InputComponent->BindAction("Pause", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::Pause).bExecuteWhenPaused = true;
+}
+
+void AVirtual_CPS_WorldPlayerController::Pause() {
+	UGameplayStatics::SetGamePaused(GetWorld(), !UGameplayStatics::IsGamePaused(GetWorld()));
+}
+void AVirtual_CPS_WorldPlayerController::ScrollUp() {
+	AVirtual_CPS_WorldCharacter* const Pawn = (AVirtual_CPS_WorldCharacter *) GetPawn();
+
+		if (Pawn){
+			FRotator rot = Pawn->GetCameraBoom()->RelativeRotation;
+			rot.Add(5, 0, 0);
+			Pawn->GetCameraBoom()->SetWorldRotation(rot);
+		}
+}
+
+void AVirtual_CPS_WorldPlayerController::ScrollDown() {
+	AVirtual_CPS_WorldCharacter* const Pawn = (AVirtual_CPS_WorldCharacter *) GetPawn();
+
+		if (Pawn){
+			FRotator rot = Pawn->GetCameraBoom()->RelativeRotation;
+			rot.Add(-5, 0, 0);
+			Pawn->GetCameraBoom()->SetWorldRotation(rot);
+		}
 }
 
 void AVirtual_CPS_WorldPlayerController::MoveToMouseCursor()

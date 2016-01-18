@@ -3,6 +3,9 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
+#include "Sockets.h"
+#include "SocketSubsystem.h"
+#include "Sensor.h"
 #include "Connections.generated.h"
 
 #define LED_PKT 0
@@ -32,5 +35,22 @@ public:
 	//UPROPERTY(EditAnywhere)
 	//USceneComponent* SensorNodeHardware;
 	
+private:
+	/* Points to all sensors in world */
+	TArray<ASensor*> sensors;
+	TMap<int, ASensor*> sensorTable;
+	/** Underlying socket communication */
+	bool bUDPActive = false;
+	ISocketSubsystem *sockSubSystem;
+	FSocket* socket;
+	int port = 5000;
+	/** Local address this net driver is associated with */
+	FColor colours[3] = {FColor(255, 0, 0),FColor(0, 255, 0),FColor(0, 0, 255)};
+
+
+	/* Storage to receive Cooja packets into */
+	uint8 data[MAX_PACKET_SIZE];
+	int32 bytesRead = 0;
+
 };
 	

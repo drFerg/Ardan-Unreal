@@ -35,6 +35,9 @@ protected:
 
 	void OnSelectItemPressed();
 	void selectItem();
+	void ScrollUp();
+	void ScrollDown();
+	void Pause();
 private:
 	TSubclassOf<class UObject> sensorBlueprint;
 

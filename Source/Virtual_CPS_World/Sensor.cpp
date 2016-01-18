@@ -195,7 +195,7 @@ void ASensor::Tick(float DeltaTime)
 	/* Check if actors located within PIR detection range have moved,
 	 * checking their current location vs previous */
 
-	if (prevLocation.Equals(SensorActor->GetActorLocation(), 10) == false) {
+	if (SensorActor && prevLocation.Equals(SensorActor->GetActorLocation(), 10) == false) {
 		sendLocationUpdate();
 		prevLocation = SensorActor->GetActorLocation();
 	}

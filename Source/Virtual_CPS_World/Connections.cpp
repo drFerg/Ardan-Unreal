@@ -4,29 +4,13 @@
 #include "Connections.h"
 #include "Engine/Channel.h"
 #include "IPAddress.h"
-#include "Sockets.h"
-#include "SocketSubsystem.h"
+
 #include "EngineUtils.h"
 #include "UnrealString.h"
 #include "Sensor.h"
 #include "Network.h"
 #include "DrawDebugHelpers.h"
 
-/* Points to all sensors in world */
-TArray<ASensor*> sensors;
-
-/** Underlying socket communication */
-bool bUDPActive = false;
-ISocketSubsystem *sockSubSystem;
-FSocket* socket;
-int port = 5000;
-/** Local address this net driver is associated with */
-FColor colours[3] = {FColor(255, 0, 0),FColor(0, 255, 0),FColor(0, 0, 255)};
-
-
-/* Storage to receive Cooja packets into */
-uint8 data[MAX_PACKET_SIZE];
-int32 bytesRead = 0;
 
 AConnections::AConnections()
 {
@@ -60,6 +44,8 @@ void AConnections::BeginPlay()
 			UE_LOG(LogNet, Log, TEXT("Location: %s"),
 					*(ActorItr->GetActorLocation().ToString()));
 			sensors.Add(ActorItr.operator *());
+			sensorTable.Add(ActorItr->ID, ActorItr.operator *());
+
 		}
 	}
  	UE_LOG(LogNet, Log, TEXT("Found %i sensors in world!"), sensors.Num());
@@ -71,7 +57,6 @@ void AConnections::BeginPlay()
 void AConnections::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 	if (bUDPActive == false) return;
 	TSharedRef<FInternetAddr> fromAddr = sockSubSystem->CreateInternetAddr();
 	/* Get data, if any. */
@@ -79,18 +64,24 @@ void AConnections::Tick(float DeltaTime)
  		//UE_LOG(LogNet, Log, TEXT("RCV: node %i"), data[0]);
  		if (data[0] == LED_PKT && data[1] < sensors.Num()) {
  			UE_LOG(LogNet, Log, TEXT("LEDPKT"));
- 			sensors[data[1]]->SetLed(data[2], data[3], data[4]);
+ 			ASensor **s = sensorTable.Find(data[1]);
+			if (s == NULL) return;
+			(*s)->SetLed(data[2], data[3], data[4]);
  		}
  		else if (data[0] == RADIO_PKT) {
  			UE_LOG(LogNet, Log, TEXT("RMPKT %d (%d)"), data[1], data[2]);
  			/* Display radio event */
- 			DrawDebugCircle(GetWorld(), sensors[data[1]]->GetSensorLocation(), 50.0, 360, colours[2], false, 0.3, 0, 5, FVector(0.f,1.f,0.f), FVector(0.f,0.f,1.f), false);
- 			DrawDebugCircle(GetWorld(), sensors[data[1]]->GetSensorLocation(), 35.0, 360, colours[2], false, 0.3, 0, 5, FVector(0.f,1.f,0.f), FVector(0.f,0.f,1.f), false);
+ 			ASensor **s = sensorTable.Find(data[1]);
+ 			if (s == NULL) return;
+ 			DrawDebugCircle(GetWorld(), (*s)->GetSensorLocation(), 50.0, 360, colours[2], false, 0.3, 0, 5, FVector(0.f,1.f,0.f), FVector(0.f,0.f,1.f), false);
+ 			DrawDebugCircle(GetWorld(), (*s)->GetSensorLocation(), 35.0, 360, colours[2], false, 0.3, 0, 5, FVector(0.f,1.f,0.f), FVector(0.f,0.f,1.f), false);
  			for (int i = 0; i < data[2]; i++){
+ 				ASensor **ss = sensorTable.Find(data[3 + i]);
+				if (ss == NULL) continue;
  				DrawDebugDirectionalArrow(
  				 				GetWorld(),
- 				 				sensors[data[1]]->GetSensorLocation(),
- 								sensors[data[3 + i]]->GetSensorLocation(),
+								(*s)->GetSensorLocation(),
+								(*ss)->GetSensorLocation(),
  								20.0,
  				 				colours[i % 3],
  				 				false, 0.3, 0,
