@@ -23,6 +23,24 @@ AVirtual_CPS_WorldPlayerController::AVirtual_CPS_WorldPlayerController()
 	} else {
 		UE_LOG(LogNet, Log, TEXT("I got nothing"));
 	}
+
+}
+
+void AVirtual_CPS_WorldPlayerController::BeginPlay(){
+	TSubclassOf<ACameraActor> ClassToFind;
+	cameras.Empty();
+	currentCam = 0;
+	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), ClassToFind, cameras);
+	for(TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+	{
+		ACameraActor* Actor = *It;
+		if(!Actor->IsPendingKill())
+		{
+			cameras.Add(Actor);
+		}
+	}
+	UE_LOG(LogNet, Log, TEXT("Found %d cameras"), cameras.Num());
+	if (cameras.Num()) NextCamera();
 }
 
 void AVirtual_CPS_WorldPlayerController::PlayerTick(float DeltaTime)
@@ -59,6 +77,13 @@ void AVirtual_CPS_WorldPlayerController::SetupInputComponent()
 	InputComponent->BindAction("ScrollDown", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::ScrollDown);
 
 	InputComponent->BindAction("Pause", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::Pause).bExecuteWhenPaused = true;
+	InputComponent->BindAction("NextCamera", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::NextCamera);
+}
+
+void AVirtual_CPS_WorldPlayerController::NextCamera() {
+	if (cameras.Num() == 0) return;
+	this->SetViewTargetWithBlend((ACameraActor *)cameras[currentCam], SmoothBlendTime);
+	currentCam = (currentCam + 1 ) % cameras.Num();
 }
 
 void AVirtual_CPS_WorldPlayerController::Pause() {
@@ -71,6 +96,7 @@ void AVirtual_CPS_WorldPlayerController::ScrollUp() {
 			FRotator rot = Pawn->GetCameraBoom()->RelativeRotation;
 			rot.Add(5, 0, 0);
 			Pawn->GetCameraBoom()->SetWorldRotation(rot);
+
 		}
 }
 
@@ -150,7 +176,7 @@ void AVirtual_CPS_WorldPlayerController::selectItem() {
 	AActor *item = Hit.GetActor();
 	if (item != NULL) {
 		if (item->GetClass()->GetName().Compare(sensorBlueprint->GetName()) == 0){
-			UE_LOG(LogNet, Log, TEXT("Clicked %s"), *(item->GetActorLabel()));
+			UE_LOG(LogNet, Log, TEXT("Clicked %s"), *(item->GetName()));
 			ASensor *sensorActor = (ASensor *)item->GetAttachParentActor();
 			DrawDebugCircle(GetWorld(), item->GetActorLocation(), 150.0, 360, FColor(0, 255, 0), false, 0.3, 0, 5, FVector(0.f,1.f,0.f), FVector(0.f,0.f,1.f), false);
 		}

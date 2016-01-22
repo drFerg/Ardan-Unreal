@@ -16,6 +16,7 @@ protected:
 	uint32 bMoveToMouseCursor : 1;
 	uint32 bSelectItem : 1;
 	// Begin PlayerController interface
+	virtual void BeginPlay() override;
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
 	// End PlayerController interface
@@ -38,8 +39,12 @@ protected:
 	void ScrollUp();
 	void ScrollDown();
 	void Pause();
+	void NextCamera();
 private:
 	TSubclassOf<class UObject> sensorBlueprint;
+	int currentCam = 0;
+	TArray<AActor*> cameras;
+	const float SmoothBlendTime = 0.75f;
 
 };
 
