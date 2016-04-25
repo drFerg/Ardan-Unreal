@@ -6,14 +6,20 @@
 #include "AI/Navigation/NavigationSystem.h"
 #include "Sensor.h"
 #include "DrawDebugHelpers.h"
+#include "EngineUtils.h"
 
 #if WITH_EDITOR
  #include "UnrealEd.h"
  #endif
 
 
+
 AVirtual_CPS_WorldPlayerController::AVirtual_CPS_WorldPlayerController()
 {
+  /* Allows camera movement when world is paused */
+  SetTickableWhenPaused(true);
+  bShouldPerformFullTickWhenPaused = true;
+
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
 	UBlueprint* blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/SensorNode.SensorNode'")));
@@ -24,29 +30,53 @@ AVirtual_CPS_WorldPlayerController::AVirtual_CPS_WorldPlayerController()
 		UE_LOG(LogNet, Log, TEXT("I got nothing"));
 	}
 
+  /* Networking setup */
+	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+	socket = sockSubSystem->CreateSocket(NAME_DGram, TEXT("UDPCONN2"), true);
+	if (socket) UE_LOG(LogNet, Log, TEXT("Created Socket"));
+	socket->SetReceiveBufferSize(RecvSize, RecvSize);
+	socket->SetSendBufferSize(SendSize, SendSize);
+
+	/* Set up destination address:port to send Cooja messages to */
+	FIPv4Address::Parse(address, ip);
+	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+	addr->SetIp(ip.GetValue());
+	addr->SetPort(port);
+
 }
 
 void AVirtual_CPS_WorldPlayerController::BeginPlay(){
 	TSubclassOf<ACameraActor> ClassToFind;
 	cameras.Empty();
 	currentCam = 0;
-	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), ClassToFind, cameras);
-	for(TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ClassToFind, cameras);
+	for(TActorIterator<AActor> It(GetWorld(), ACameraActor::StaticClass()); It; ++It)
 	{
-		ACameraActor* Actor = *It;
+		ACameraActor* Actor = (ACameraActor*)*It;
 		if(!Actor->IsPendingKill())
 		{
 			cameras.Add(Actor);
+      Actor->SetTickableWhenPaused(true);
 		}
 	}
 	UE_LOG(LogNet, Log, TEXT("Found %d cameras"), cameras.Num());
-	if (cameras.Num()) NextCamera();
+	//if (cameras.Num()) NextCamera();
+  UE_LOG(LogNet, Log, TEXT("--START--"));
 }
 
 void AVirtual_CPS_WorldPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
-
+  /* Working out FPS */
+  elapsed += DeltaTime;
+  tickCount += 1;
+  if (elapsed >= 1) {
+    UE_LOG(LogNet, Log, TEXT("TSTAMP: %f %f %f %d "), DeltaTime, 1/DeltaTime,
+          elapsed/tickCount,
+          tickCount);
+    elapsed = 0;
+    tickCount = 0;
+  }
 	// keep updating the destination every tick while desired
 	if (bMoveToMouseCursor)
 	{
@@ -54,7 +84,6 @@ void AVirtual_CPS_WorldPlayerController::PlayerTick(float DeltaTime)
 	}
 	if (bSelectItem) {
 		selectItem();
-
 		bSelectItem = false;
 	}
 }
@@ -67,7 +96,7 @@ void AVirtual_CPS_WorldPlayerController::SetupInputComponent()
 	InputComponent->BindAction("SetDestination", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::OnSetDestinationPressed);
 	InputComponent->BindAction("SetDestination", IE_Released, this, &AVirtual_CPS_WorldPlayerController::OnSetDestinationReleased);
 
-	// support touch devices 
+	// support touch devices
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::MoveToTouchLocation);
 	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &AVirtual_CPS_WorldPlayerController::MoveToTouchLocation);
 
@@ -87,8 +116,25 @@ void AVirtual_CPS_WorldPlayerController::NextCamera() {
 }
 
 void AVirtual_CPS_WorldPlayerController::Pause() {
+  UE_LOG(LogNet, Log, TEXT("Paused"));
 	UGameplayStatics::SetGamePaused(GetWorld(), !UGameplayStatics::IsGamePaused(GetWorld()));
+  fbb.Clear();
+	UnrealCoojaMsg::MessageBuilder msg(fbb);
+
+	//msg.add_id(ID);
+	msg.add_type(UGameplayStatics::IsGamePaused(GetWorld()) ?
+                                              UnrealCoojaMsg::MsgType_PAUSE :
+                                              UnrealCoojaMsg::MsgType_RESUME);
+	//msg.add_pir()
+	auto mloc = msg.Finish();
+	fbb.Finish(mloc);
+
+	int sent = 0;
+	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
+										 sent, *addr);
+
 }
+
 void AVirtual_CPS_WorldPlayerController::ScrollUp() {
 	AVirtual_CPS_WorldCharacter* const Pawn = (AVirtual_CPS_WorldCharacter *) GetPawn();
 
@@ -182,4 +228,3 @@ void AVirtual_CPS_WorldPlayerController::selectItem() {
 		}
 	}
 }
-

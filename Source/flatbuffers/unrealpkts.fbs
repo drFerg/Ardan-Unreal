@@ -1,7 +1,7 @@
 namespace UnrealCoojaMsg;
 
 
-enum MsgType : byte { LED = 1, LOCATION, RADIO, PIR }
+enum MsgType : byte { LED = 1, LOCATION, RADIO, PIR, PAUSE, RESUME }
 
 struct Vec3 {
   x:float;

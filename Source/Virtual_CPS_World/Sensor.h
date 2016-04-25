@@ -24,14 +24,14 @@ UCLASS()
 class VIRTUAL_CPS_WORLD_API ASensor : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	ASensor();
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
+
 	// Called every frame
 	virtual void Tick(float DeltaSeconds) override;
 	void Led(int32 led, bool on);
@@ -74,9 +74,12 @@ private:
 	FSocket* socket;
 	FVector prevLocation;
 	flatbuffers::FlatBufferBuilder fbb;
-
+	FIPv4Address ip;
+	TSharedPtr<FInternetAddr> addr;
+	int32 RecvSize = 0x8000;
+	int32 SendSize = 0x8000;
 	void sendLocationUpdate();
 
 
-	
+
 };

@@ -4,7 +4,7 @@
 #include "Node.h"
 #include <vector>
 
-#define LEDON 10000
+#define LEDON 500
 #define LEDOFF 0
 
 //ATriggerBox* tb;
@@ -44,8 +44,8 @@ void Node::OnBeginTriggerOverlap(class AActor* OtherActor, class UPrimitiveCompo
 void Node::Led(int32 led, bool on)
 {
 	if (led > 3 && led < 0) return;
-	UE_LOG(LogNet, Log, TEXT("Node: %s"), *(actor->GetName()))
-	UE_LOG(LogNet, Log, TEXT("Led: %s (%i)"), *(Leds[led]->GetName()), led);
+	// UE_LOG(LogNet, Log, TEXT("Node: %s"), *(actor->GetName()))
+	// UE_LOG(LogNet, Log, TEXT("Led: %s (%i)"), *(Leds[led]->GetName()), led);
 	Leds[led]->SetIntensity(on ? LEDON : LEDOFF);
 }
 

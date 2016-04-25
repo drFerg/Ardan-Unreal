@@ -19,7 +19,7 @@
 #include "DrawDebugHelpers.h"
 
 
-#define LEDON 10000
+#define LEDON 4500
 #define LEDOFF 0
 
 template <typename VictoryObjType>
@@ -45,10 +45,7 @@ VictoryObjType* SpawnBP(
 		return TheWorld->SpawnActor<VictoryObjType>(TheBP, Loc ,Rot, SpawnInfo);
 	}
 
-FIPv4Address ip;
-TSharedPtr<FInternetAddr> addr;
-int32 RecvSize = 0x8000;
-int32 SendSize = 0x8000;
+
 
 TArray<AActor*> inMotionRange;
 TMap<AActor*, FVector> inMotionPos; /* Contains actor as key and old location */
@@ -58,10 +55,10 @@ TMap<AActor*, FVector> inMotionPos; /* Contains actor as key and old location */
 void ASensor::OnBeginOverlap(class AActor* otherActor) {
 	/* Start motion tracking the overlapping otherActor */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
-	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	//UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
-
+	
 	msg.add_id(ID);
 	msg.add_type(UnrealCoojaMsg::MsgType_PIR);
 	//msg.add_pir()
@@ -71,12 +68,12 @@ void ASensor::OnBeginOverlap(class AActor* otherActor) {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 									 sent, *addr);
-	UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
+	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
 
 void ASensor::OnEndOverlap(class AActor* otherActor) {
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
-	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	//UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
 
@@ -89,7 +86,7 @@ void ASensor::OnEndOverlap(class AActor* otherActor) {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
-	UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
+	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
 
 ASensor::ASensor()
@@ -160,7 +157,6 @@ void ASensor::BeginPlay()
 	Super::BeginPlay();
 
 	TArray<AActor*> attachedActors;
-
 	if(SensorActor) {
 		SensorActor->GetAttachedActors(attachedActors);
 		if (PIRSensor) {
@@ -173,8 +169,8 @@ void ASensor::BeginPlay()
 		SensorActor->GetComponents(Leds);
 		for (USpotLightComponent *l: Leds) {
 			if (l == NULL) continue;
-			UE_LOG(LogNet, Log, TEXT("%s owned by %s"), *(l->GetName()),
-					*(l->GetOwner()->GetName()));
+			//UE_LOG(LogNet, Log, TEXT("%s owned by %s"), *(l->GetName()),
+				//	*(l->GetOwner()->GetName()));
 			l->SetIntensity(LEDOFF);
 		}
 	}
@@ -205,8 +201,8 @@ void ASensor::Tick(float DeltaTime)
 void ASensor::Led(int32 led, bool on)
 {
 	if (led > 3 && led < 0) return;
-	UE_LOG(LogNet, Log, TEXT("Node: %s"), *(SensorActor->GetName()))
-	UE_LOG(LogNet, Log, TEXT("Led: %s (%i)"), *(Leds[led]->GetName()), led);
+//UE_LOG(LogNet, Log, TEXT("Node: %s"), *(SensorActor->GetName()))
+	//UE_LOG(LogNet, Log, TEXT("Led: %s (%i)"), *(Leds[led]->GetName()), led);
 	Leds[led]->SetIntensity(on ? LEDON : LEDOFF);
 }
 
@@ -216,9 +212,9 @@ void ASensor::SetLed(uint8 R, uint8 G, uint8 B)
 	Leds[0]->SetIntensity(R ? LEDON : LEDOFF);
 	Leds[1]->SetIntensity(G ? LEDON : LEDOFF);
 	Leds[2]->SetIntensity(B ? LEDON : LEDOFF);
-	if (Light1) Light1->GetLightComponent()->SetIntensity(R ? 50000: LEDOFF);
-	if (Light2) Light2->GetLightComponent()->SetIntensity(R ? 50000: LEDOFF);
-	if (Light3) Light3->GetLightComponent()->SetIntensity(R ? 50000: LEDOFF);
+	if (Light1) Light1->GetLightComponent()->SetIntensity(R ? LEDON: LEDOFF);
+	if (Light2) Light2->GetLightComponent()->SetIntensity(R ? LEDON: LEDOFF);
+	if (Light3) Light3->GetLightComponent()->SetIntensity(R ? LEDON: LEDOFF);
 }
 
 void ASensor::SetSelected() {
@@ -244,7 +240,7 @@ void ASensor::sendLocationUpdate() {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 									 sent, *addr);
-	UE_LOG(LogNet, Log, TEXT("Loc update %d (%i-%i)"), ID, successful, sent);
+	//UE_LOG(LogNet, Log, TEXT("Loc update %d (%i-%i)"), ID, successful, sent);
 }
 //		for (AActor *a: attachedActors) {
 //			UE_LOG(LogNet, Log, TEXT("%s:%s"), *(a->GetName()), *(a->GetClass()->GetName()));
