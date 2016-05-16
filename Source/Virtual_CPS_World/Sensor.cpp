@@ -56,9 +56,10 @@ void ASensor::OnBeginOverlap(class AActor* otherActor) {
 	/* Start motion tracking the overlapping otherActor */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
 	//UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	if (!active) return;
 	fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
-	
+
 	msg.add_id(ID);
 	msg.add_type(UnrealCoojaMsg::MsgType_PIR);
 	//msg.add_pir()
@@ -68,12 +69,14 @@ void ASensor::OnBeginOverlap(class AActor* otherActor) {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 									 sent, *addr);
+	active = false;
 	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
 
 void ASensor::OnEndOverlap(class AActor* otherActor) {
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
 	//UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	if (!active) return;
 	fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
 
@@ -86,6 +89,7 @@ void ASensor::OnEndOverlap(class AActor* otherActor) {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
+  active = false;
 	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
 
@@ -195,7 +199,11 @@ void ASensor::Tick(float DeltaTime)
 		sendLocationUpdate();
 		prevLocation = SensorActor->GetActorLocation();
 	}
-
+	activeTimer += DeltaTime;
+	if (activeTimer > PIRRepeatTime) {
+		active = true;
+		activeTimer = 0;
+	}
 }
 
 void ASensor::Led(int32 led, bool on)

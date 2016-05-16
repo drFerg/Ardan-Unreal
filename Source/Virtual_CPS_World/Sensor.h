@@ -52,6 +52,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
 	AStaticMeshActor* PIRSensor;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
+	float PIRRepeatTime = 1.0;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
 	int32 ID = 0;
 
@@ -78,6 +81,8 @@ private:
 	TSharedPtr<FInternetAddr> addr;
 	int32 RecvSize = 0x8000;
 	int32 SendSize = 0x8000;
+	bool active = true;
+	float activeTimer = 0;
 	void sendLocationUpdate();
 
 

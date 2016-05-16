@@ -13,7 +13,6 @@
  #endif
 
 
-
 AVirtual_CPS_WorldPlayerController::AVirtual_CPS_WorldPlayerController()
 {
   /* Allows camera movement when world is paused */
@@ -45,7 +44,11 @@ AVirtual_CPS_WorldPlayerController::AVirtual_CPS_WorldPlayerController()
 
 }
 
-void AVirtual_CPS_WorldPlayerController::BeginPlay(){
+void AVirtual_CPS_WorldPlayerController::BeginPlay() {
+  conns = FRunnableConnection::create(5000, &packetQ);
+  // conns->Init();
+  // conns->Run();
+
 	TSubclassOf<ACameraActor> ClassToFind;
 	cameras.Empty();
 	currentCam = 0;
@@ -61,8 +64,28 @@ void AVirtual_CPS_WorldPlayerController::BeginPlay(){
 	}
 	UE_LOG(LogNet, Log, TEXT("Found %d cameras"), cameras.Num());
 	//if (cameras.Num()) NextCamera();
+
+  /* Find all sensors in the world to handle connections to Cooja */
+ 	for (TActorIterator<ASensor> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+	{
+		if (ActorItr->GetClass() == ASensor::StaticClass()) {
+			//UE_LOG(LogNet, Log, TEXT("Name: %s"), *(ActorItr->GetName()));
+			//UE_LOG(LogNet, Log, TEXT("Class: %s"),
+					//*(ActorItr->GetClass()->GetDesc()));
+			//UE_LOG(LogNet, Log, TEXT("Location: %s"),
+				//	*(ActorItr->GetActorLocation().ToString()));
+			sensors.Add(ActorItr.operator *());
+			sensorTable.Add(ActorItr->ID, ActorItr.operator *());
+
+		}
+	}
   UE_LOG(LogNet, Log, TEXT("--START--"));
 }
+
+void AVirtual_CPS_WorldPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+  conns->Stop();
+}
+
 
 void AVirtual_CPS_WorldPlayerController::PlayerTick(float DeltaTime)
 {
@@ -86,6 +109,40 @@ void AVirtual_CPS_WorldPlayerController::PlayerTick(float DeltaTime)
 		selectItem();
 		bSelectItem = false;
 	}
+  update_sensors();
+}
+
+
+void AVirtual_CPS_WorldPlayerController::update_sensors() {
+  uint8* pkt;
+  int count = 0;
+  while (count++ < 5 && !packetQ.IsEmpty()){
+    packetQ.Dequeue(pkt);
+    if (pkt[0] == LED_PKT && pkt[1] < sensors.Num()) {
+   			//UE_LOG(LogNet, Log, TEXT("LEDPKT"));
+   			ASensor **s = sensorTable.Find(pkt[1]);
+  			if (s == NULL) return;
+  			(*s)->SetLed(pkt[2], pkt[3], pkt[4]);
+ 		}
+    else if (pkt[0] == RADIO_PKT) {
+  		//UE_LOG(LogNet, Log, TEXT("RMPKT %d (%d)"), pkt[1], pkt[2]);
+  		/* Display radio event */
+  		ASensor **s = sensorTable.Find(pkt[1]);
+  		if (s == NULL) return;
+      FVector sourceLoc = (*s)->GetSensorLocation();
+  		DrawDebugCircle(GetWorld(), sourceLoc, 50.0, 360, colours[pkt[1] % 12], false, 0.5 , 0, 5, FVector(1.f,0.f,0.f), FVector(0.f,1.f,0.f), false);
+  		for (int i = 0; i < pkt[2]; i++) {
+		    ASensor **ss = sensorTable.Find(pkt[3 + i]);
+        if (ss == NULL) continue;
+  			DrawDebugDirectionalArrow(GetWorld(), sourceLoc,
+                                  (*ss)->GetSensorLocation(),
+                    							500.0, colours[pkt[1] % 12],
+                    			 				false, 0.5, 0, 5.0);
+  		}
+
+ 		}
+		free(pkt);
+  }
 }
 
 void AVirtual_CPS_WorldPlayerController::SetupInputComponent()

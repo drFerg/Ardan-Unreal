@@ -43,7 +43,7 @@ private:
 	bool bUDPActive = false;
 	ISocketSubsystem *sockSubSystem;
 	FSocket* socket;
-	int port = 5000;
+	int port = 5001;
 	/** Local address this net driver is associated with */
 	FColor colours[12] = {FColor(255, 0, 0),
 											 FColor(0, 255, 0),

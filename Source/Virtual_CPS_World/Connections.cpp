@@ -58,8 +58,10 @@ void AConnections::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (bUDPActive == false) return;
 	TSharedRef<FInternetAddr> fromAddr = sockSubSystem->CreateInternetAddr();
+	int i = 0;
 	/* Get data, if any. */
- 	while (socket->RecvFrom(data, MAX_PACKET_SIZE, bytesRead, *fromAddr)){
+ 	while (i < 5 && socket->RecvFrom(data, MAX_PACKET_SIZE, bytesRead, *fromAddr)){
+		i++;
  		////UE_LOG(LogNet, Log, TEXT("RCV: node %i"), data[0]);
  		if (data[0] == LED_PKT && data[1] < sensors.Num()) {
  			//UE_LOG(LogNet, Log, TEXT("LEDPKT"));
