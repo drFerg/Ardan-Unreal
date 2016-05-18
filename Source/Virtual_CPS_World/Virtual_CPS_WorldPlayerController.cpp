@@ -46,6 +46,8 @@ AVirtual_CPS_WorldPlayerController::AVirtual_CPS_WorldPlayerController()
 
 void AVirtual_CPS_WorldPlayerController::BeginPlay() {
   conns = FRunnableConnection::create(5000, &packetQ);
+  if (conns) {UE_LOG(LogNet, Log, TEXT("conns created"));}
+  else { UE_LOG(LogNet, Log, TEXT("conns failed"));}
   // conns->Init();
   // conns->Run();
 
@@ -83,7 +85,11 @@ void AVirtual_CPS_WorldPlayerController::BeginPlay() {
 }
 
 void AVirtual_CPS_WorldPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-  conns->Stop();
+  if (conns) {
+    conns->Stop();
+    conns->Shutdown();
+  }
+
 }
 
 

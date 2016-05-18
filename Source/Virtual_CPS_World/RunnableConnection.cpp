@@ -18,6 +18,13 @@ FRunnableConnection::FRunnableConnection(int port,
 	pktQ = packetQ;
 	thread = FRunnableThread::Create(this, TEXT("FRunnableConnection"), 0, TPri_AboveNormal);
 		 //windows default = 8mb for thread, could specify more
+	check(thread);
+	UE_LOG(LogNet, Log, TEXT("Created Connection Thread!"));
+}
+
+FRunnableConnection::~FRunnableConnection() {
+	delete thread;
+	thread = NULL;
 }
 
 FRunnableConnection* FRunnableConnection::create(int port,
@@ -26,8 +33,12 @@ FRunnableConnection* FRunnableConnection::create(int port,
 	//		and the platform supports multi threading!
 	if (!Runnable && FPlatformProcess::SupportsMultithreading()) {
 		Runnable = new FRunnableConnection(port, packetQ);
+		check(Runnable);
+		UE_LOG(LogNet, Log, TEXT("Created Connection Runnable!"));
+		return Runnable;
 	}
-	return Runnable;
+	UE_LOG(LogNet, Log, TEXT("Connection Runnable already running!"));
+	return NULL;
 }
 
 
@@ -35,7 +46,6 @@ bool FRunnableConnection::Init() {
 	/* Initialise networking */
 	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
 	socket = Network::createSocket(sockSubSystem, dstport, true);
-	socket->SetNonBlocking(false);
 	if (socket != NULL) return true;
 	else return false;
 }
@@ -43,9 +53,8 @@ bool FRunnableConnection::Init() {
 
 
 /* Called every frame */
-uint32 FRunnableConnection::Run()
-{
-
+uint32 FRunnableConnection::Run() {
+	UE_LOG(LogNet, Log, TEXT("Connection Thread Started!"));
 	TSharedRef<FInternetAddr> fromAddr = sockSubSystem->CreateInternetAddr();
 	/* Get data, if any. */
 	uint8* pkt;
@@ -53,14 +62,29 @@ uint32 FRunnableConnection::Run()
  	while (!stop) {
 		while (socket->HasPendingData(size)) {
 			pkt = (uint8*) malloc(size);
-			socket->RecvFrom(pkt, MAX_PACKET_SIZE, bytesRead, *fromAddr);
-	 		UE_LOG(LogNet, Log, TEXT("RCV: node %i"), data[0]);
+			socket->RecvFrom(pkt, size, bytesRead, *fromAddr);
 			pktQ->Enqueue(pkt);
 		}
  	}
+	socket->Close();
+	ISocketSubsystem::Get()->DestroySocket(socket);
+	complete = true;
+	UE_LOG(LogNet, Log, TEXT("Connection Thread Stopped!"));
 	return 0;
 }
 
-void FRunnableConnection::Stop(){
+void FRunnableConnection::Stop() {
 	stop = true;
+	// socket->Close();
+	// ISocketSubsystem::Get()->DestroySocket(socket);
+}
+
+void FRunnableConnection::Shutdown() {
+	if (Runnable) {
+		thread->WaitForCompletion();
+		delete Runnable;
+		Runnable = NULL;
+		complete = false;
+		stop = false;
+	}
 }

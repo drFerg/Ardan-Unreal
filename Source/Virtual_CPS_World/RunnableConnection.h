@@ -16,11 +16,12 @@ public:
 
 
 	FRunnableConnection(int port, TQueue<uint8*, EQueueMode::Spsc> *packetQ);
-	virtual ~FRunnableConnection(){};
+	virtual ~FRunnableConnection();
 
 	virtual bool Init();
 	virtual uint32 Run();
 	virtual void Stop();
+	virtual void Shutdown();
 
 	static FRunnableConnection* create(int port, TQueue<uint8*, EQueueMode::Spsc> *packetQ);
 private:
@@ -34,7 +35,7 @@ private:
 	TQueue<uint8*, EQueueMode::Spsc> *pktQ;
 	/** Local address this net driver is associated with */
 	bool stop = false;
-
+	bool complete = false;
 
 	/* Storage to receive Cooja packets into */
 	uint8 data[MAX_PACKET_SIZE];
