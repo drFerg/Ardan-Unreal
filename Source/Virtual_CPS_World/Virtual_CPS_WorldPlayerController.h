@@ -57,6 +57,11 @@ protected:
 	void Pause();
 	void NextCamera();
 	void update_sensors();
+	
+	void speedSlow();
+	void speedNormal();
+	void speedFast();
+
 private:
 	TArray<ASensor*> sensors;
 	TMap<int, ASensor*> sensorTable;
@@ -64,6 +69,8 @@ private:
 	int currentCam = 0;
 	TArray<AActor*> cameras;
 	const float SmoothBlendTime = 0.75f;
+
+	bool slow = false;
 	float elapsed = 0;
 	int tickCount = 0;
 	ISocketSubsystem* sockSubSystem;

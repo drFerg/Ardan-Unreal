@@ -147,11 +147,7 @@ ASensor::ASensor()
 	socket->SetReceiveBufferSize(RecvSize, RecvSize);
 	socket->SetSendBufferSize(SendSize, SendSize);
 
-	/* Set up destination address:port to send Cooja messages to */
-	FIPv4Address::Parse(address, ip);
-	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
-	addr->SetIp(ip.GetValue());
-	addr->SetPort(port);
+
 }
 
 
@@ -160,6 +156,12 @@ void ASensor::BeginPlay()
 {
 	Super::BeginPlay();
 
+	/* Set up destination address:port to send Cooja messages to */
+	FIPv4Address::Parse(address, ip);
+	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+	addr->SetIp(ip.GetValue());
+	addr->SetPort(port);
+	
 	TArray<AActor*> attachedActors;
 	if(SensorActor) {
 		SensorActor->GetAttachedActors(attachedActors);

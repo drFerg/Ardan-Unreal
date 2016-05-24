@@ -128,6 +128,7 @@ void AVirtual_CPS_WorldPlayerController::update_sensors() {
    			//UE_LOG(LogNet, Log, TEXT("LEDPKT"));
    			ASensor **s = sensorTable.Find(pkt[1]);
   			if (s == NULL) return;
+        //UE_LOG(LogNet, Log, TEXT("FOUND SENSOR"));
   			(*s)->SetLed(pkt[2], pkt[3], pkt[4]);
  		}
     else if (pkt[0] == RADIO_PKT) {
@@ -145,7 +146,6 @@ void AVirtual_CPS_WorldPlayerController::update_sensors() {
                     							500.0, colours[pkt[1] % 12],
                     			 				false, 0.5, 0, 5.0);
   		}
-
  		}
 		free(pkt);
   }
@@ -170,6 +170,10 @@ void AVirtual_CPS_WorldPlayerController::SetupInputComponent()
 
 	InputComponent->BindAction("Pause", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::Pause).bExecuteWhenPaused = true;
 	InputComponent->BindAction("NextCamera", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::NextCamera);
+
+  InputComponent->BindAction("Slow", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::speedSlow);
+  InputComponent->BindAction("Normal", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::speedNormal);
+  InputComponent->BindAction("Fast", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::SpeedFast);
 }
 
 void AVirtual_CPS_WorldPlayerController::NextCamera() {
@@ -181,6 +185,7 @@ void AVirtual_CPS_WorldPlayerController::NextCamera() {
 void AVirtual_CPS_WorldPlayerController::Pause() {
   UE_LOG(LogNet, Log, TEXT("Paused"));
 	UGameplayStatics::SetGamePaused(GetWorld(), !UGameplayStatics::IsGamePaused(GetWorld()));
+
   fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
 
@@ -196,6 +201,53 @@ void AVirtual_CPS_WorldPlayerController::Pause() {
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
 
+}
+
+void AVirtual_CPS_WorldPlayerController::speedSlow() {
+  UE_LOG(LogNet, Log, TEXT("Speed at 0.1"));
+  UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.1);
+
+  fbb.Clear();
+	UnrealCoojaMsg::MessageBuilder msg(fbb);
+	msg.add_type(slow ? UnrealCoojaMsg::MsgType_SPEED_NORM :
+                      UnrealCoojaMsg::MsgType_SPEED_SLOW);
+	auto mloc = msg.Finish();
+	fbb.Finish(mloc);
+
+	int sent = 0;
+	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
+										 sent, *addr);
+  slow = !slow;
+}
+
+void AVirtual_CPS_WorldPlayerController::speedNormal() {
+  UE_LOG(LogNet, Log, TEXT("Speed at 1.0"));
+  UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0);
+
+  fbb.Clear();
+	UnrealCoojaMsg::MessageBuilder msg(fbb);
+	msg.add_type(UnrealCoojaMsg::MsgType_SPEED_NORM);
+	auto mloc = msg.Finish();
+	fbb.Finish(mloc);
+
+	int sent = 0;
+	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
+										 sent, *addr);
+}
+
+void AVirtual_CPS_WorldPlayerController::speedFast() {
+  UE_LOG(LogNet, Log, TEXT("Speed at 2.0"));
+  UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 2.0);
+
+  fbb.Clear();
+	UnrealCoojaMsg::MessageBuilder msg(fbb);
+	msg.add_type(UnrealCoojaMsg::MsgType_SPEED_FAST);
+	auto mloc = msg.Finish();
+	fbb.Finish(mloc);
+
+	int sent = 0;
+	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
+										 sent, *addr);
 }
 
 void AVirtual_CPS_WorldPlayerController::ScrollUp() {

@@ -52,18 +52,19 @@ bool FRunnableConnection::Init() {
 
 
 
-/* Called every frame */
+/* Runs continously, until killed by endGame */
 uint32 FRunnableConnection::Run() {
 	UE_LOG(LogNet, Log, TEXT("Connection Thread Started!"));
 	TSharedRef<FInternetAddr> fromAddr = sockSubSystem->CreateInternetAddr();
-	/* Get data, if any. */
+
 	uint8* pkt;
 	uint32 size;
- 	while (!stop) {
+ 	while (!stop) { /* Run until told to stop */
 		while (socket->HasPendingData(size)) {
 			pkt = (uint8*) malloc(size);
+			/* Data available, non-blocking read */
 			socket->RecvFrom(pkt, size, bytesRead, *fromAddr);
-			pktQ->Enqueue(pkt);
+			pktQ->Enqueue(pkt); /* pass on to game-thread */
 		}
  	}
 	socket->Close();
