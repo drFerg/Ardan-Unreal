@@ -39,7 +39,7 @@ AVirtual_CPS_WorldPlayerController::AVirtual_CPS_WorldPlayerController()
 	/* Set up destination address:port to send Cooja messages to */
 	FIPv4Address::Parse(address, ip);
 	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
-	addr->SetIp(ip.GetValue());
+	addr->SetIp(ip.Value);
 	addr->SetPort(port);
 
 }
@@ -89,13 +89,26 @@ void AVirtual_CPS_WorldPlayerController::EndPlay(const EEndPlayReason::Type EndP
     conns->Stop();
     conns->Shutdown();
   }
-
 }
 
 
-void AVirtual_CPS_WorldPlayerController::PlayerTick(float DeltaTime)
-{
+void AVirtual_CPS_WorldPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
+
+  APawn* const Pawn = GetPawn();
+  FVector sourceLoc = Pawn->GetActorLocation();
+  FTransform *transform = new FTransform();
+  *transform = Pawn->GetTransform();
+
+
+  /* Pop and set actors old location else push current location onto stack */
+  if (bReverse && locHistory.Num() > 0) {
+      Pawn->SetActorTransform(*locHistory.Pop(false));
+  }
+  else {
+    locHistory.Push(transform);
+  }
+
   /* Working out FPS */
   elapsed += DeltaTime;
   tickCount += 1;
@@ -105,6 +118,7 @@ void AVirtual_CPS_WorldPlayerController::PlayerTick(float DeltaTime)
           tickCount);
     elapsed = 0;
     tickCount = 0;
+    DrawDebugCircle(GetWorld(), sourceLoc, 5.0, 360, colours[0], false, 30, 0, 1, FVector(1.f,0.f,0.f), FVector(0.f,1.f,0.f), false);
   }
 	// keep updating the destination every tick while desired
 	if (bMoveToMouseCursor)
@@ -173,7 +187,19 @@ void AVirtual_CPS_WorldPlayerController::SetupInputComponent()
 
   InputComponent->BindAction("Slow", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::speedSlow);
   InputComponent->BindAction("Normal", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::speedNormal);
-  InputComponent->BindAction("Fast", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::SpeedFast);
+  InputComponent->BindAction("Fast", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::speedFast);
+  InputComponent->BindAction("Reverse", IE_Pressed, this, &AVirtual_CPS_WorldPlayerController::reversePressed);
+  InputComponent->BindAction("Reverse", IE_Released, this, &AVirtual_CPS_WorldPlayerController::reverseReleased);
+
+}
+
+void AVirtual_CPS_WorldPlayerController::reversePressed() {
+  bReverse = true;
+}
+
+void AVirtual_CPS_WorldPlayerController::reverseReleased() {
+  bReverse = false;
+  Pause();
 }
 
 void AVirtual_CPS_WorldPlayerController::NextCamera() {

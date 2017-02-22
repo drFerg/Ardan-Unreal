@@ -23,21 +23,16 @@
 #define LEDOFF 0
 
 template <typename VictoryObjType>
-VictoryObjType* SpawnBP(
-		UWorld* TheWorld,
-		UClass* TheBP,
-		const FVector& Loc,
-		const FRotator& Rot,
-		const bool bNoCollisionFail = true,
-		AActor* Owner = NULL,
-		APawn* Instigator = NULL
-	){
+VictoryObjType* SpawnBP(UWorld* TheWorld, UClass* TheBP, const FVector& Loc,
+		const FRotator& Rot, const bool bNoCollisionFail = true,
+		AActor* Owner = NULL,	APawn* Instigator = NULL) {
+
 		if(!TheWorld) return NULL;
 		if(!TheBP) return NULL;
 		//~~
 
 		FActorSpawnParameters SpawnInfo;
-		SpawnInfo.bNoCollisionFail 		= bNoCollisionFail;
+		// SpawnInfo.bNoCollisionFail 		= bNoCollisionFail;
 		SpawnInfo.Owner 				= Owner;
 		SpawnInfo.Instigator			= Instigator;
 		SpawnInfo.bDeferConstruction 	= false;
@@ -52,7 +47,8 @@ TMap<AActor*, FVector> inMotionPos; /* Contains actor as key and old location */
 
 
 
-void ASensor::OnBeginOverlap(class AActor* otherActor) {
+void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
+														 class AActor* otherActor) {
 	/* Start motion tracking the overlapping otherActor */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
 	//UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
@@ -73,7 +69,8 @@ void ASensor::OnBeginOverlap(class AActor* otherActor) {
 	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
 
-void ASensor::OnEndOverlap(class AActor* otherActor) {
+void ASensor::OnEndOverlap(class AActor* OverlappedActor,
+													 class AActor* otherActor) {
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
 	//UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	if (!active) return;
@@ -146,8 +143,6 @@ ASensor::ASensor()
 	if (socket) UE_LOG(LogNet, Log, TEXT("Created Socket"));
 	socket->SetReceiveBufferSize(RecvSize, RecvSize);
 	socket->SetSendBufferSize(SendSize, SendSize);
-
-
 }
 
 
@@ -159,9 +154,9 @@ void ASensor::BeginPlay()
 	/* Set up destination address:port to send Cooja messages to */
 	FIPv4Address::Parse(address, ip);
 	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
-	addr->SetIp(ip.GetValue());
+	addr->SetIp(ip.Value);
 	addr->SetPort(port);
-	
+
 	TArray<AActor*> attachedActors;
 	if(SensorActor) {
 		SensorActor->GetAttachedActors(attachedActors);
