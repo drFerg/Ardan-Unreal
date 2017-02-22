@@ -38,9 +38,9 @@ public:
 	void SetLed(uint8 R, uint8 G, uint8 B);
 	FVector GetSensorLocation();
 	UFUNCTION()
-	void OnBeginOverlap(class AActor* OtherActor);
+	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor);
 	UFUNCTION()
-	void OnEndOverlap(class AActor* OtherActor);
+	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor);
 	void SetSelected();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)

@@ -57,12 +57,16 @@ protected:
 	void Pause();
 	void NextCamera();
 	void update_sensors();
-	
+	void reversePressed();
+	void reverseReleased();
 	void speedSlow();
 	void speedNormal();
 	void speedFast();
 
 private:
+	TArray<FTransform*> locHistory;
+	//TArray<FVelocity*> velHistory;
+	bool bReverse = false;
 	TArray<ASensor*> sensors;
 	TMap<int, ASensor*> sensorTable;
 	TSubclassOf<class UObject> sensorBlueprint;
