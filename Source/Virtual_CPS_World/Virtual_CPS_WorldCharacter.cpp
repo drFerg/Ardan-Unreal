@@ -29,7 +29,11 @@ AVirtual_CPS_WorldCharacter::AVirtual_CPS_WorldCharacter()
 
 	// Create a camera...
 	TopDownCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
+<<<<<<< HEAD
 	TopDownCameraComponent->AttachToComponent(CameraBoom, FAttachmentTransformRules::KeepWorldTransform, USpringArmComponent::SocketName);
+=======
+	TopDownCameraComponent->AttachToComponent(CameraBoom, USpringArmComponent::SocketName);
+>>>>>>> 70377ef466b566521cb7bf7d269563215dd47e88
 	TopDownCameraComponent->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 }
