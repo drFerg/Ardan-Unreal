@@ -45,6 +45,8 @@ AVirtual_CPS_WorldPlayerController::AVirtual_CPS_WorldPlayerController()
 }
 
 void AVirtual_CPS_WorldPlayerController::BeginPlay() {
+  Super::BeginPlay();
+
   conns = FRunnableConnection::create(5000, &packetQ);
   if (conns) {UE_LOG(LogNet, Log, TEXT("conns created"));}
   else { UE_LOG(LogNet, Log, TEXT("conns failed"));}
