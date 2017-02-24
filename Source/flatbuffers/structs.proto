@@ -1,0 +1,21 @@
+ syntax = "proto3";
+package UnrealCooja;
+
+message Update {
+  int32 msgType = 1;
+  enum type {
+    LED = 0;
+    RADIO = 1;
+    LOCATION = 2;
+    PIR = 3;
+
+  }
+
+  message Location {
+    int32 moteID = 1;
+    float x = 2;
+    float y = 3;
+    float z = 4;
+  }
+  Location loc = 2;
+}

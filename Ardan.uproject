@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{1D97B2D5-2502-1015-0003-0243246AAFD5}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "Ardan",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
