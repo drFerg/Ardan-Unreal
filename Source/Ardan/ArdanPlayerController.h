@@ -8,6 +8,7 @@
 #include <flatbuffers/flatbuffers.h>
 #include "RunnableConnection.h"
 #include "Sensor.h"
+#include "TimeSphere.h"
 
 #include "unrealpkts_generated.h"
 
@@ -66,6 +67,7 @@ protected:
 
 	private:
 		TArray<FTransform*> locHistory;
+		TArray<ATimeSphere*> timeSpheres;
 		//TArray<FVelocity*> velHistory;
 		bool bReverse = false;
 		TArray<ASensor*> sensors;
@@ -77,6 +79,7 @@ protected:
 
 		bool slow = false;
 		float elapsed = 0;
+		float tenth = 0;
 		int tickCount = 0;
 		ISocketSubsystem* sockSubSystem;
 		FSocket* socket;

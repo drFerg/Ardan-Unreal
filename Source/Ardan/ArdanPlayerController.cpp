@@ -11,6 +11,23 @@
 #include "Runtime/Engine/Classes/Camera/CameraActor.h"
 #include "ArdanCharacter.h"
 
+template<class T> T* SpawnActor(UWorld* world,
+  FVector const& Location,
+  FRotator const& Rotation,
+  AActor* Owner=NULL,
+  APawn* Instigator=NULL,
+  bool bNoCollisionFail=false
+
+){
+	FActorSpawnParameters SpawnInfo;
+	SpawnInfo.Owner = Owner;
+	SpawnInfo.Instigator = Instigator;
+	SpawnInfo.bDeferConstruction = false;
+	SpawnInfo.bNoFail 		= bNoCollisionFail;
+	// SpawnInfo.bNoCollisionFail = bNoCollisionFail;
+  return (T*)(world->SpawnActor<T>(&Location, &Rotation, SpawnInfo));
+}
+
 AArdanPlayerController::AArdanPlayerController()
 {
 	bShowMouseCursor = true;
@@ -95,6 +112,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime)
 	Super::PlayerTick(DeltaTime);
 	APawn* const Pawn = GetPawn();
   FVector sourceLoc = Pawn->GetActorLocation();
+	FRotator sourceRot = Pawn->GetActorRotation();
   FTransform *transform = new FTransform();
   *transform = Pawn->GetTransform();
 	/* Pop and set actors old location else push current location onto stack */
@@ -107,6 +125,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime)
 
 	/* Working out FPS */
 	elapsed += DeltaTime;
+	tenth += DeltaTime;
 	tickCount += 1;
 	if (elapsed >= 1) {
 		UE_LOG(LogNet, Log, TEXT("TSTAMP: %f %f %f %d "), DeltaTime, 1/DeltaTime,
@@ -114,7 +133,30 @@ void AArdanPlayerController::PlayerTick(float DeltaTime)
 					tickCount);
 		elapsed = 0;
 		tickCount = 0;
+	}
+	if (tenth >= 0.1){
+		tenth = 0;
 		DrawDebugCircle(GetWorld(), sourceLoc, 5.0, 360, colours[0], false, 30, 0, 1, FVector(1.f,0.f,0.f), FVector(0.f,1.f,0.f), false);
+		// ATimeSphere *ts = NewObject<ATimeSphere>();
+		// ATimeSphere *ts = SpawnActor<ATimeSphere>(GetWorld(), Pawn->GetActorLocation(), Pawn->GetActorRotation(), NULL, NULL, false);
+		FActorSpawnParameters SpawnInfo;
+		SpawnInfo.Owner = NULL;
+		SpawnInfo.Instigator = NULL;
+		SpawnInfo.bDeferConstruction = false;
+		SpawnInfo.bNoFail 		= false;
+		// SpawnInfo.bNoCollisionFail = bNoCollisionFail;
+		// UE_LOG(LogNet, Log, TEXT("Location: %s"), *(sourceLoc.ToString()));
+	  ATimeSphere *ts = GetWorld()->SpawnActor<ATimeSphere>(sourceLoc, sourceRot, SpawnInfo);
+		if (timeSpheres.Num() > 0) {
+		DrawDebugLine(GetWorld(),
+			sourceLoc, timeSpheres.Top()->GetActorLocation(),
+			FColor(255,0,0), false, 30, 0, 4);
+		}
+		if (ts != NULL) {
+		// ts->init(sourceLoc);
+		timeSpheres.Push(ts);
+	}
+	else UE_LOG(LogNet, Log, TEXT("NOOOOOOOOOOOOOOO"));
 	}
 	// keep updating the destination every tick while desired
 	if (bMoveToMouseCursor)
