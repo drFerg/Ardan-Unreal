@@ -3740,6 +3740,16 @@
     <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/NetworkReplayStreaming/NetworkReplayStreaming/Public" />
     <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Intermediate/Build/Linux/B4D820EA/UE4Editor/Inc/NetworkReplayStreaming" />
     <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/NetworkReplayStreaming/NetworkReplayStreaming" />
+    <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Sockets/Public" />
+    <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Intermediate/Build/Linux/B4D820EA/UE4Editor/Inc/Sockets" />
+    <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Sockets" />
+    <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking/Public" />
+    <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking/Public/Common" />
+    <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking/Public/Interfaces" />
+    <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking/Public/Interfaces/IPv4" />
+    <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking/Public/Interfaces/Steam" />
+    <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Intermediate/Build/Linux/B4D820EA/UE4Editor/Inc/Networking" />
+    <Include Path="/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking" />
   </WorkspaceParserPaths>
   <Project Name="UE4Client" Path="Intermediate/ProjectFiles/UE4Client.project" Active="No" />
   <Project Name="UE4Editor" Path="Intermediate/ProjectFiles/UE4Editor.project" Active="No" />

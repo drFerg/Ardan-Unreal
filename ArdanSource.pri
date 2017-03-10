@@ -6415,6 +6415,14 @@ SOURCES += \
 	"$$ArdanRootPath/Source/Ardan/Ardan.cpp" \
 	"$$ArdanRootPath/Source/Ardan/ArdanCharacter.cpp" \
 	"$$ArdanRootPath/Source/Ardan/ArdanGameMode.cpp" \
+	"$$ArdanRootPath/Source/Ardan/ArdanGhostController.cpp" \
 	"$$ArdanRootPath/Source/Ardan/ArdanPlayerController.cpp" \
+	"$$ArdanRootPath/Source/Ardan/Connections.cpp" \
+	"$$ArdanRootPath/Source/Ardan/GhostCharacter.cpp" \
+	"$$ArdanRootPath/Source/Ardan/Network.cpp" \
+	"$$ArdanRootPath/Source/Ardan/Node.cpp" \
+	"$$ArdanRootPath/Source/Ardan/RunnableConnection.cpp" \
+	"$$ArdanRootPath/Source/Ardan/Sensor.cpp" \
+	"$$ArdanRootPath/Source/Ardan/TimeSphere.cpp" \
  
 

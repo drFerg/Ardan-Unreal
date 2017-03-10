@@ -8333,5 +8333,13 @@ HEADERS += \
 	"$$ArdanRootPath/Source/Ardan/ArdanCharacter.h" \
 	"$$ArdanRootPath/Source/Ardan/ArdanGameMode.h" \
 	"$$ArdanRootPath/Source/Ardan/ArdanPlayerController.h" \
+	"$$ArdanRootPath/Source/Ardan/Connections.h" \
+	"$$ArdanRootPath/Source/Ardan/GhostCharacter.h" \
+	"$$ArdanRootPath/Source/Ardan/Network.h" \
+	"$$ArdanRootPath/Source/Ardan/Node.h" \
+	"$$ArdanRootPath/Source/Ardan/RunnableConnection.h" \
+	"$$ArdanRootPath/Source/Ardan/Sensor.h" \
+	"$$ArdanRootPath/Source/Ardan/TimeSphere.h" \
+	"$$ArdanRootPath/Source/Ardan/unrealpkts_generated.h" \
  
 

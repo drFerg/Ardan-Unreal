@@ -3737,3 +3737,13 @@
 /home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/NetworkReplayStreaming/NetworkReplayStreaming/Public
 /home/fwl14/projects/UnrealEngineGit/Engine/Intermediate/Build/Linux/B4D820EA/UE4Editor/Inc/NetworkReplayStreaming
 /home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/NetworkReplayStreaming/NetworkReplayStreaming
+/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Sockets/Public
+/home/fwl14/projects/UnrealEngineGit/Engine/Intermediate/Build/Linux/B4D820EA/UE4Editor/Inc/Sockets
+/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Sockets
+/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking/Public
+/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking/Public/Common
+/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking/Public/Interfaces
+/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking/Public/Interfaces/IPv4
+/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking/Public/Interfaces/Steam
+/home/fwl14/projects/UnrealEngineGit/Engine/Intermediate/Build/Linux/B4D820EA/UE4Editor/Inc/Networking
+/home/fwl14/projects/UnrealEngineGit/Engine/Source/Runtime/Networking
