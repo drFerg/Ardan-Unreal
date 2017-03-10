@@ -136,7 +136,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime)
 	}
 	if (tenth >= 0.1){
 		tenth = 0;
-		DrawDebugCircle(GetWorld(), sourceLoc, 5.0, 360, colours[0], false, 30, 0, 1, FVector(1.f,0.f,0.f), FVector(0.f,1.f,0.f), false);
+		// DrawDebugCircle(GetWorld(), sourceLoc, 5.0, 360, colours[0], false, 30, 0, 1, FVector(1.f,0.f,0.f), FVector(0.f,1.f,0.f), false);
 		// ATimeSphere *ts = NewObject<ATimeSphere>();
 		// ATimeSphere *ts = SpawnActor<ATimeSphere>(GetWorld(), Pawn->GetActorLocation(), Pawn->GetActorRotation(), NULL, NULL, false);
 		FActorSpawnParameters SpawnInfo;
@@ -148,9 +148,9 @@ void AArdanPlayerController::PlayerTick(float DeltaTime)
 		// UE_LOG(LogNet, Log, TEXT("Location: %s"), *(sourceLoc.ToString()));
 	  ATimeSphere *ts = GetWorld()->SpawnActor<ATimeSphere>(sourceLoc, sourceRot, SpawnInfo);
 		if (timeSpheres.Num() > 0) {
-		DrawDebugLine(GetWorld(),
-			sourceLoc, timeSpheres.Top()->GetActorLocation(),
-			FColor(255,0,0), false, 30, 0, 4);
+  		DrawDebugLine(GetWorld(),
+  			ts->GetActorLocation(), timeSpheres.Top()->GetActorLocation(),
+  			FColor(255,0,0), false, 30, 0, 4);
 		}
 		if (ts != NULL) {
 		// ts->init(sourceLoc);
