@@ -11,6 +11,7 @@
 #include "Runtime/Engine/Classes/Camera/CameraActor.h"
 #include "ArdanCharacter.h"
 
+
 template<class T> T* SpawnActor(UWorld* world,
   FVector const& Location,
   FRotator const& Rotation,
@@ -97,6 +98,7 @@ void AArdanPlayerController::BeginPlay() {
 
 		}
 	}
+  initHist();
   UE_LOG(LogNet, Log, TEXT("--START--"));
 }
 
@@ -106,6 +108,65 @@ void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
     conns->Shutdown();
   }
 }
+
+void AArdanPlayerController::recordActors() {
+  for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+  	AStaticMeshActor *mesh = *ActorItr;
+    UStaticMeshComponent *m = mesh->GetStaticMeshComponent();
+  	// UE_LOG(LogNet, Log, TEXT("A: %s"), *mesh->GetName());
+    TArray<FObjectMeta*> *hist = *histMap.Find(mesh->GetName());
+    FTransform curTrans = mesh->GetTransform();
+    FObjectMeta *meta = NULL;
+    UE_LOG(LogNet, Warning, TEXT("MyCharacter's Location is %s"),
+    *curTrans.ToString());
+    if (hist->Num() > 0 && curTrans.Equals(hist->Top()->transform)) {
+      meta = hist->Top();
+    } else {
+      meta = new FObjectMeta();
+      meta->transform = curTrans;
+      meta->velocity = m->GetPhysicsLinearVelocity();
+      meta->angular_velocity = m->GetPhysicsAngularVelocity();
+    }
+    UE_LOG(LogNet, Warning, TEXT("MyCharacter's SLocation is %s"),
+    *meta->transform.ToString());
+    hist->Add(meta);
+
+  }
+}
+void AArdanPlayerController::rewindActors() {
+  for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+  {
+  	// Same as with the Object Iterator, access the subclass instance with the * or -> operators.
+  	AStaticMeshActor *mesh = *ActorItr;
+    UStaticMeshComponent *m = mesh->GetStaticMeshComponent();
+
+  	// UE_LOG(LogNet, Log, TEXT("A: %s"), *mesh->GetName());
+    TArray<FObjectMeta*> *hist = *histMap.Find(mesh->GetName());
+    if (hist->Num()) {
+      FObjectMeta *meta = hist->Pop(false);
+
+      mesh->SetActorTransform(meta->transform);
+      m->SetPhysicsLinearVelocity(meta->velocity);
+      m->SetPhysicsAngularVelocity(meta->angular_velocity);
+      UE_LOG(LogNet, Warning, TEXT("MyCharacter's SLocation is %s"),
+      *meta->transform.ToString());
+      // delete meta;
+
+    }
+  }
+}
+
+void AArdanPlayerController::initHist() {
+  for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+  {
+    // Same as with the Object Iterator, access the subclass instance with the * or -> operators.
+    AStaticMeshActor *Mesh = *ActorItr;
+    UE_LOG(LogNet, Log, TEXT("A: %s"), *Mesh->GetName());
+    TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
+    histMap.Add(Mesh->GetName(), hist);
+  }
+}
+
 
 void AArdanPlayerController::PlayerTick(float DeltaTime)
 {
@@ -118,12 +179,15 @@ void AArdanPlayerController::PlayerTick(float DeltaTime)
 	/* Pop and set actors old location else push current location onto stack */
 	if (bReverse && locHistory.Num() > 0) {
 			Pawn->SetActorTransform(*locHistory.Pop(false));
+      rewindActors();
+      return;
 	}
 	else {
 		locHistory.Push(transform);
+    recordActors();
 	}
 
-	/* Working out FPS */
+	// /* Working out FPS */
 	elapsed += DeltaTime;
 	tenth += DeltaTime;
 	tickCount += 1;
@@ -135,6 +199,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime)
 		tickCount = 0;
 	}
 	if (tenth >= 0.1){
+
 		tenth = 0;
 		// DrawDebugCircle(GetWorld(), sourceLoc, 5.0, 360, colours[0], false, 30, 0, 1, FVector(1.f,0.f,0.f), FVector(0.f,1.f,0.f), false);
 		// ATimeSphere *ts = NewObject<ATimeSphere>();
@@ -369,7 +434,7 @@ void AArdanPlayerController::speedNormal() {
 
 void AArdanPlayerController::speedFast() {
   UE_LOG(LogNet, Log, TEXT("Speed at 2.0"));
-  UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 2.0);
+  UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 5.0);
 
   fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);

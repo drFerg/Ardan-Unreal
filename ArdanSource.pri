@@ -6421,6 +6421,7 @@ SOURCES += \
 	"$$ArdanRootPath/Source/Ardan/GhostCharacter.cpp" \
 	"$$ArdanRootPath/Source/Ardan/Network.cpp" \
 	"$$ArdanRootPath/Source/Ardan/Node.cpp" \
+	"$$ArdanRootPath/Source/Ardan/ObjectState.cpp" \
 	"$$ArdanRootPath/Source/Ardan/RunnableConnection.cpp" \
 	"$$ArdanRootPath/Source/Ardan/Sensor.cpp" \
 	"$$ArdanRootPath/Source/Ardan/TimeSphere.cpp" \

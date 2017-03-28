@@ -15,9 +15,16 @@
 #include "GameFramework/PlayerController.h"
 #include "ArdanPlayerController.generated.h"
 
+USTRUCT()
+struct FObjectMeta {
+	GENERATED_BODY()
+	FVector velocity;
+	FVector angular_velocity;
+	FTransform transform;
+};
+
 UCLASS()
-class AArdanPlayerController : public APlayerController
-{
+class AArdanPlayerController : public APlayerController {
 	GENERATED_BODY()
 
 public:
@@ -26,6 +33,8 @@ public:
 	int32 port = 5011;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Network)
 	FString address = TEXT("127.0.0.1");
+
+
 
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
@@ -64,10 +73,14 @@ protected:
 	void speedSlow();
 	void speedNormal();
 	void speedFast();
+	void recordActors();
+	void initHist();
+	void rewindActors();
 
 	private:
 		TArray<FTransform*> locHistory;
 		TArray<ATimeSphere*> timeSpheres;
+		TMap<FString, TArray<FObjectMeta*>*> histMap;
 		//TArray<FVelocity*> velHistory;
 		bool bReverse = false;
 		TArray<ASensor*> sensors;
