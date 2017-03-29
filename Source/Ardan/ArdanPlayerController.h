@@ -19,8 +19,10 @@ USTRUCT()
 struct FObjectMeta {
 	GENERATED_BODY()
 	FVector velocity;
-	FVector angular_velocity;
+	FVector angularVelocity;
 	FTransform transform;
+	float deltaTime;
+	float timeStamp;
 };
 
 UCLASS()
@@ -73,16 +75,23 @@ protected:
 	void speedSlow();
 	void speedNormal();
 	void speedFast();
-	void recordActors();
+	void recordActors(float deltaTime);
 	void initHist();
 	void rewindActors();
+	void replayActors();
+	void resetActors();
+	void replayPressed();
+
 
 	private:
 		TArray<FTransform*> locHistory;
 		TArray<ATimeSphere*> timeSpheres;
 		TMap<FString, TArray<FObjectMeta*>*> histMap;
-		//TArray<FVelocity*> velHistory;
+		int index = 0;
+		float replayTime = 0;
+		float curTime = 0;
 		bool bReverse = false;
+		bool bReplay = false;
 		TArray<ASensor*> sensors;
 		TMap<int, ASensor*> sensorTable;
 		TSubclassOf<class UObject> sensorBlueprint;

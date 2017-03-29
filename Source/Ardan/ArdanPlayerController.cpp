@@ -109,26 +109,68 @@ void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
   }
 }
 
-void AArdanPlayerController::recordActors() {
+void AArdanPlayerController::replayActors() {
+  int oldIndex = index;
   for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
   	AStaticMeshActor *mesh = *ActorItr;
     UStaticMeshComponent *m = mesh->GetStaticMeshComponent();
-  	// UE_LOG(LogNet, Log, TEXT("A: %s"), *mesh->GetName());
+    index = oldIndex;
+    TArray<FObjectMeta*> *hist = *histMap.Find(mesh->GetName());
+    while ((*hist)[index]->timeStamp <= curTime) {
+      UE_LOG(LogNet, Log, TEXT("TSTAMP: %f <:> %f"), (*hist)[index]->timeStamp, curTime);
+      FObjectMeta *meta = (*hist)[index];
+      mesh->SetActorTransform(meta->transform);
+      m->SetPhysicsLinearVelocity(meta->velocity);
+      m->SetPhysicsAngularVelocity(meta->angularVelocity);
+      index += 1;
+      if (index >= hist->Num()) {
+        UE_LOG(LogNet, Log, TEXT("BREAK"));
+        bReplay = false;
+        break;
+      }
+    }
+  }
+}
+
+void AArdanPlayerController::resetActors() {
+  for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+
+    AStaticMeshActor *mesh = *ActorItr;
+    UStaticMeshComponent *m = mesh->GetStaticMeshComponent();
+
+    TArray<FObjectMeta*> *hist = *histMap.Find(mesh->GetName());
+    index = 0;
+    if (hist->Num()) {
+      FObjectMeta *meta = (*hist)[0];
+
+      mesh->SetActorTransform(meta->transform);
+      m->SetPhysicsLinearVelocity(meta->velocity);
+      m->SetPhysicsAngularVelocity(meta->angularVelocity);
+    }
+  }
+}
+
+void AArdanPlayerController::recordActors(float deltaTime) {
+  for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+  	AStaticMeshActor *mesh = *ActorItr;
+    UStaticMeshComponent *m = mesh->GetStaticMeshComponent();
     TArray<FObjectMeta*> *hist = *histMap.Find(mesh->GetName());
     FTransform curTrans = mesh->GetTransform();
     FObjectMeta *meta = NULL;
-    UE_LOG(LogNet, Warning, TEXT("MyCharacter's Location is %s"),
-    *curTrans.ToString());
-    if (hist->Num() > 0 && curTrans.Equals(hist->Top()->transform)) {
-      meta = hist->Top();
-    } else {
-      meta = new FObjectMeta();
-      meta->transform = curTrans;
-      meta->velocity = m->GetPhysicsLinearVelocity();
-      meta->angular_velocity = m->GetPhysicsAngularVelocity();
-    }
-    UE_LOG(LogNet, Warning, TEXT("MyCharacter's SLocation is %s"),
-    *meta->transform.ToString());
+    // if (hist->Num() && curTrans.Equals(hist->Top()->transform)) {
+    //   meta = hist->Top();
+    //   UE_LOG(LogNet, Log, TEXT("AAAAHIIIIA: %s"), *mesh->GetName());
+    //
+    // } else {
+
+    meta = new FObjectMeta();
+    meta->transform = curTrans;
+    meta->velocity = m->GetPhysicsLinearVelocity();
+    meta->angularVelocity = m->GetPhysicsAngularVelocity();
+    meta->deltaTime = deltaTime;
+    meta->timeStamp = curTime;
+    // }
+
     hist->Add(meta);
 
   }
@@ -147,10 +189,8 @@ void AArdanPlayerController::rewindActors() {
 
       mesh->SetActorTransform(meta->transform);
       m->SetPhysicsLinearVelocity(meta->velocity);
-      m->SetPhysicsAngularVelocity(meta->angular_velocity);
-      UE_LOG(LogNet, Warning, TEXT("MyCharacter's SLocation is %s"),
-      *meta->transform.ToString());
-      // delete meta;
+      m->SetPhysicsAngularVelocity(meta->angularVelocity);
+
 
     }
   }
@@ -167,24 +207,36 @@ void AArdanPlayerController::initHist() {
   }
 }
 
+void AArdanPlayerController::replayPressed() {
+  bReplay = true;
+  curTime = 0;
+  replayTime = 0;
+  resetActors();
+}
 
 void AArdanPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
+  curTime += DeltaTime;
 	APawn* const Pawn = GetPawn();
   FVector sourceLoc = Pawn->GetActorLocation();
 	FRotator sourceRot = Pawn->GetActorRotation();
   FTransform *transform = new FTransform();
   *transform = Pawn->GetTransform();
 	/* Pop and set actors old location else push current location onto stack */
-	if (bReverse && locHistory.Num() > 0) {
+  if (bReplay) {
+    replayTime += DeltaTime;
+    UE_LOG(LogNet, Log, TEXT("ReplayTime: %f"), replayTime);
+    replayActors();
+  }
+	else if (bReverse && locHistory.Num() > 0) {
 			Pawn->SetActorTransform(*locHistory.Pop(false));
       rewindActors();
       return;
 	}
 	else {
 		locHistory.Push(transform);
-    recordActors();
+    recordActors(DeltaTime);
 	}
 
 	// /* Working out FPS */
@@ -288,6 +340,9 @@ void AArdanPlayerController::SetupInputComponent()
   InputComponent->BindAction("Fast", IE_Pressed, this, &AArdanPlayerController::speedFast);
   InputComponent->BindAction("Reverse", IE_Pressed, this, &AArdanPlayerController::reversePressed);
   InputComponent->BindAction("Reverse", IE_Released, this, &AArdanPlayerController::reverseReleased);
+
+  InputComponent->BindAction("ResetReplay", IE_Pressed, this, &AArdanPlayerController::replayPressed);
+
 }
 
 void AArdanPlayerController::OnResetVR()
