@@ -8,6 +8,7 @@
 #include "Sensor.h"
 #include "DrawDebugHelpers.h"
 #include "EngineUtils.h"
+#include "UObjectGlobals.h"
 #include "Runtime/Engine/Classes/Camera/CameraActor.h"
 #include "ArdanCharacter.h"
 
@@ -29,13 +30,12 @@ template<class T> T* SpawnActor(UWorld* world,
   return (T*)(world->SpawnActor<T>(&Location, &Rotation, SpawnInfo));
 }
 
-AArdanPlayerController::AArdanPlayerController()
-{
+AArdanPlayerController::AArdanPlayerController() {
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
 	/* Allows camera movement when world is paused */
-  SetTickableWhenPaused(true);
-  bShouldPerformFullTickWhenPaused = true;
+	SetTickableWhenPaused(true);
+	bShouldPerformFullTickWhenPaused = true;
 
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
@@ -111,100 +111,121 @@ void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 
 void AArdanPlayerController::replayActors() {
   int oldIndex = index;
-  for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-  	AStaticMeshActor *mesh = *ActorItr;
-    UStaticMeshComponent *m = mesh->GetStaticMeshComponent();
-    index = oldIndex;
-    TArray<FObjectMeta*> *hist = *histMap.Find(mesh->GetName());
-    while ((*hist)[index]->timeStamp <= curTime) {
-      UE_LOG(LogNet, Log, TEXT("TSTAMP: %f <:> %f"), (*hist)[index]->timeStamp, curTime);
-      FObjectMeta *meta = (*hist)[index];
-      mesh->SetActorTransform(meta->transform);
-      m->SetPhysicsLinearVelocity(meta->velocity);
-      m->SetPhysicsAngularVelocity(meta->angularVelocity);
-      index += 1;
-      if (index >= hist->Num()) {
-        UE_LOG(LogNet, Log, TEXT("BREAK"));
-        bReplay = false;
-        break;
-      }
-    }
-  }
+	for (auto &itr : histMap) {
+		FObjectInfo* info = itr.Value;
+		// Only rewind if it's a ghost, otherwise it is alive and recording
+		if (!info->bisGhost) continue;
+		index = oldIndex;
+		UStaticMeshComponent* mesh = info->actor->GetStaticMeshComponent();
+		TArray<FObjectMeta*>* hist = info->hist;
+		while (index < hist->Num() && (*hist)[index]->timeStamp <= curTime) {
+			UE_LOG(LogNet, Log, TEXT("TSTAMP: %f <:> %f"), (*hist)[index]->timeStamp, curTime);
+			FObjectMeta *meta = (*hist)[index];
+			info->actor->SetActorTransform(meta->transform);
+			mesh->SetPhysicsLinearVelocity(meta->velocity);
+			mesh->SetPhysicsAngularVelocity(meta->angularVelocity);
+			index += 1;
+			if (index >= (*hist).Num()) {
+				UE_LOG(LogNet, Log, TEXT("BREAK"));
+				info->actor->StaticMeshComponent->SetMobility(EComponentMobility::Stationary);
+				bReplay = false;
+				break;
+			}
+		}
+	}
 }
 
 void AArdanPlayerController::resetActors() {
-  for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+	// Reset all actors to their initial start position and spawn new ghost objects to repeat their previous run
+  APawn* const Pawn = GetPawn();
+  int z = 0;
+  FActorSpawnParameters spawnParams;
+  spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+  spawnParams.Template = NULL;
+  APawn *newa = GetWorld()->SpawnActorAbsolute<APawn>(Pawn->GetClass(), Pawn->GetTransform(), spawnParams);
+  index = 0;
+  for (auto &itr : histMap) {
+	  FObjectInfo* info = itr.Value;
+	  UStaticMeshComponent* mesh = info->actor->GetStaticMeshComponent();
+		info->bisGhost = true;
+	  // Check if actor has an initial position and reset to it
+	  if (info->hist->Num()) {
+		  FObjectMeta *meta = (*info->hist)[0];
+			info->actor->SetActorEnableCollision(false);
+			info->actor->StaticMeshComponent->SetMobility(EComponentMobility::Movable);
+		  info->actor->SetActorTransform(meta->transform);
+		  mesh->SetPhysicsLinearVelocity(meta->velocity);
+		  mesh->SetPhysicsAngularVelocity(meta->angularVelocity);
+			
+			//UE_LOG(LogNet, Log, TEXT("(%d)A: %s : %s : %s"), z++, *info->actor->GetName(), *info->actor->GetClass()->GetName(), *info->actor->GetTransform().ToString());
 
-    AStaticMeshActor *mesh = *ActorItr;
-    UStaticMeshComponent *m = mesh->GetStaticMeshComponent();
-
-    TArray<FObjectMeta*> *hist = *histMap.Find(mesh->GetName());
-    index = 0;
-    if (hist->Num()) {
-      FObjectMeta *meta = (*hist)[0];
-
-      mesh->SetActorTransform(meta->transform);
-      m->SetPhysicsLinearVelocity(meta->velocity);
-      m->SetPhysicsAngularVelocity(meta->angularVelocity);
-    }
+			spawnParams.Template = info->actor;
+			AStaticMeshActor *newb = GetWorld()->SpawnActor<AStaticMeshActor>(info->actor->GetClass(), meta->transform, spawnParams);
+			// Disable collision on old ones to create ghosts.
+			newb->SetActorEnableCollision(true);
+			FObjectInfo *actorInfo = new FObjectInfo();
+			actorInfo->actor = newb;
+			actorInfo->hist = new TArray<FObjectMeta*>();
+			TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
+			histMap.Add(newb->GetName(), actorInfo);
+			//UE_LOG(LogNet, Log, TEXT("%s"), (newb != NULL ? TEXT("YES") : TEXT("NO")))
+	  }
   }
 }
 
 void AArdanPlayerController::recordActors(float deltaTime) {
-  for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-  	AStaticMeshActor *mesh = *ActorItr;
-    UStaticMeshComponent *m = mesh->GetStaticMeshComponent();
-    TArray<FObjectMeta*> *hist = *histMap.Find(mesh->GetName());
-    FTransform curTrans = mesh->GetTransform();
-    FObjectMeta *meta = NULL;
-    // if (hist->Num() && curTrans.Equals(hist->Top()->transform)) {
-    //   meta = hist->Top();
-    //   UE_LOG(LogNet, Log, TEXT("AAAAHIIIIA: %s"), *mesh->GetName());
-    //
-    // } else {
+	// Record a single tick for all actors
+	for (auto &itr : histMap) {
+		FObjectInfo* info = itr.Value;
+		//Only record non-ghost actors
+		if (info->bisGhost) continue;
+		UStaticMeshComponent* mesh = info->actor->GetStaticMeshComponent();
+		FTransform curTrans = info->actor->GetTransform();
+		FObjectMeta *meta = NULL;
 
-    meta = new FObjectMeta();
-    meta->transform = curTrans;
-    meta->velocity = m->GetPhysicsLinearVelocity();
-    meta->angularVelocity = m->GetPhysicsAngularVelocity();
-    meta->deltaTime = deltaTime;
-    meta->timeStamp = curTime;
-    // }
+		meta = new FObjectMeta();
+		meta->transform = curTrans;
+		meta->velocity = mesh->GetPhysicsLinearVelocity();
+		meta->angularVelocity = mesh->GetPhysicsAngularVelocity();
+		meta->deltaTime = deltaTime;
+		meta->timeStamp = curTime;
 
-    hist->Add(meta);
+		info->hist->Add(meta);
 
-  }
+	}
 }
+
 void AArdanPlayerController::rewindActors() {
-  for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr)
-  {
-  	// Same as with the Object Iterator, access the subclass instance with the * or -> operators.
-  	AStaticMeshActor *mesh = *ActorItr;
-    UStaticMeshComponent *m = mesh->GetStaticMeshComponent();
+	// Rewind each recorded actor one tick
+	for (auto &itr : histMap) {
+		FObjectInfo *actorInfo = itr.Value;
+		if (actorInfo->hist->Num()) {
+			FObjectMeta *meta = actorInfo->hist->Pop(false);
+			UStaticMeshComponent *mesh = actorInfo->actor->GetStaticMeshComponent();
 
-  	// UE_LOG(LogNet, Log, TEXT("A: %s"), *mesh->GetName());
-    TArray<FObjectMeta*> *hist = *histMap.Find(mesh->GetName());
-    if (hist->Num()) {
-      FObjectMeta *meta = hist->Pop(false);
-
-      mesh->SetActorTransform(meta->transform);
-      m->SetPhysicsLinearVelocity(meta->velocity);
-      m->SetPhysicsAngularVelocity(meta->angularVelocity);
-
-
-    }
-  }
+			actorInfo->actor->SetActorTransform(meta->transform);
+			mesh->SetPhysicsLinearVelocity(meta->velocity);
+			mesh->SetPhysicsAngularVelocity(meta->angularVelocity);
+		}
+	}
 }
 
 void AArdanPlayerController::initHist() {
-  for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr)
-  {
-    // Same as with the Object Iterator, access the subclass instance with the * or -> operators.
-    AStaticMeshActor *Mesh = *ActorItr;
-    UE_LOG(LogNet, Log, TEXT("A: %s"), *Mesh->GetName());
-    TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
-    histMap.Add(Mesh->GetName(), hist);
-  }
+	// Initialise and add all static mesh actors records to our history map
+	for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		AStaticMeshActor *actor = *ActorItr;
+
+		// Check if actor can actually move, if not don't bother recording.
+		if (!actor->StaticMeshComponent->Mobility) continue;
+		UE_LOG(LogNet, Log, TEXT("A: %s"), *actor->GetName());
+
+		// Set up actorInfo object to record actor history
+		FObjectInfo *actorInfo = new FObjectInfo();
+		actorInfo->actor = actor;
+		actorInfo->hist = new TArray<FObjectMeta*>();
+		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
+		histMap.Add(actor->GetName(), actorInfo);
+	}
 }
 
 void AArdanPlayerController::replayPressed() {
@@ -212,6 +233,7 @@ void AArdanPlayerController::replayPressed() {
   curTime = 0;
   replayTime = 0;
   resetActors();
+
 }
 
 void AArdanPlayerController::PlayerTick(float DeltaTime)
@@ -226,8 +248,13 @@ void AArdanPlayerController::PlayerTick(float DeltaTime)
 	/* Pop and set actors old location else push current location onto stack */
   if (bReplay) {
     replayTime += DeltaTime;
-    UE_LOG(LogNet, Log, TEXT("ReplayTime: %f"), replayTime);
+    //UE_LOG(LogNet, Log, TEXT("ReplayTime: %f"), replayTime);
     replayActors();
+    // APawn *npawn = (APawn *) GetWorld()->SpawnActor(APawn::StaticClass(), NULL, NULL, NULL, Pawn, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    // NewSubObject = NewObject<UObject>(Pawn);
+		recordActors(DeltaTime);
+
+
   }
 	else if (bReverse && locHistory.Num() > 0) {
 			Pawn->SetActorTransform(*locHistory.Pop(false));

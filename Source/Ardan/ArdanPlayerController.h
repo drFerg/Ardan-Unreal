@@ -25,6 +25,15 @@ struct FObjectMeta {
 	float timeStamp;
 };
 
+USTRUCT()
+struct FObjectInfo {
+	GENERATED_BODY()
+	AStaticMeshActor *actor;
+	TArray<FObjectMeta*> *hist;
+	bool bisGhost = false;
+};
+
+
 UCLASS()
 class AArdanPlayerController : public APlayerController {
 	GENERATED_BODY()
@@ -36,7 +45,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Network)
 	FString address = TEXT("127.0.0.1");
 
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Time)
+	TArray<AStaticMeshActor*> ReplayActors;
 
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
@@ -84,9 +94,11 @@ protected:
 
 
 	private:
+		UObject* NewSubObject;
 		TArray<FTransform*> locHistory;
 		TArray<ATimeSphere*> timeSpheres;
-		TMap<FString, TArray<FObjectMeta*>*> histMap;
+		TArray<void *> timelines;
+		TMap<FString, FObjectInfo*> histMap;
 		int index = 0;
 		float replayTime = 0;
 		float curTime = 0;

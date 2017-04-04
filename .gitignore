@@ -1,0 +1,6 @@
+Content/*
+*.exe
+Intermediate/*
+Saved/*
+Binaries/*
+.vs/*
