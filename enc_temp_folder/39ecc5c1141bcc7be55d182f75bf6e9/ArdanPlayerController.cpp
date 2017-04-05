@@ -220,9 +220,7 @@ void AArdanPlayerController::copyActors(FHistory* history) {
 	for (auto &iter : history->histMap) {
 		FObjectInfo* info = iter.Value;
 		spawnParams.Template = info->actor;
-		AStaticMeshActor *newb = GetWorld()->SpawnActor<AStaticMeshActor>(info->actor->GetClass(), info->actor->GetActorTransform(), spawnParams);
-		//force new actor to old actors position 
-		newb->SetActorTransform(info->actor->GetActorTransform());
+		AStaticMeshActor *newb = GetWorld()->SpawnActor<AStaticMeshActor>(info->actor->GetClass(), info->actor->GetTransform(), spawnParams);
 		// renable collision
 		newb->SetActorEnableCollision(true);
 		/* Create history in current history*/

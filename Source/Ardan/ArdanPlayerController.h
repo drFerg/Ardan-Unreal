@@ -33,6 +33,12 @@ struct FObjectInfo {
 	bool bisGhost = false;
 };
 
+USTRUCT()
+struct FHistory {
+	GENERATED_BODY()
+	TMap<FString, FObjectInfo*> histMap;
+	int level;
+};
 
 UCLASS()
 class AArdanPlayerController : public APlayerController {
@@ -87,18 +93,20 @@ protected:
 	void speedFast();
 	void recordActors(float deltaTime);
 	void initHist();
+	void copyActors(FHistory * history);
 	void rewindActors();
-	void replayActors();
-	void resetActors();
+	void replayActors(FHistory *history);
+	void resetActors(FHistory *history);
 	void replayPressed();
 
 
 	private:
+		TArray<FHistory*> histories;
 		UObject* NewSubObject;
 		TArray<FTransform*> locHistory;
 		TArray<ATimeSphere*> timeSpheres;
 		TArray<void *> timelines;
-		TMap<FString, FObjectInfo*> histMap;
+		FHistory *currentHistory;
 		int index = 0;
 		float replayTime = 0;
 		float curTime = 0;
