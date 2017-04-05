@@ -106,26 +106,24 @@ void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 }
 
 void AArdanPlayerController::replayActors(FHistory *history) {
-  int oldIndex = index;
 	for (auto &itr : history->histMap) {
 		FObjectInfo* info = itr.Value;
 		// Only rewind if it's a ghost, otherwise it is alive and recording
 		//if (!info->bisGhost) continue;
-		index = oldIndex;
 		UStaticMeshComponent* mesh = info->actor->GetStaticMeshComponent();
 		TArray<FObjectMeta*>* hist = info->hist;
-		while (index < hist->Num() && (*hist)[index]->timeStamp <= curTime) {
+		while (info->index < hist->Num() && (*hist)[info->index]->timeStamp <= curTime) {
 			//UE_LOG(LogNet, Log, TEXT("TSTAMP: %f <:> %f"), (*hist)[index]->timeStamp, curTime);
-			FObjectMeta *meta = (*hist)[index];
+			FObjectMeta *meta = (*hist)[info->index];
 			info->actor->SetActorTransform(meta->transform);
 			mesh->SetPhysicsLinearVelocity(meta->velocity);
 			mesh->SetPhysicsAngularVelocity(meta->angularVelocity);
-			index += 1;
-			if (index >= (*hist).Num()) {
+			info->index += 1;
+			if (info->index >= (*hist).Num()) {
 				//UE_LOG(LogNet, Log, TEXT("BREAK"));
 				/*info->actor->StaticMeshComponent->SetSimulatePhysics(false);*/
-				info->actor->StaticMeshComponent->SetMobility(EComponentMobility::Stationary);
-				bReplay = false;
+				info->actor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Stationary);
+				history->bfinished = true;
 				break;
 			}
 		}
@@ -134,8 +132,7 @@ void AArdanPlayerController::replayActors(FHistory *history) {
 
 void AArdanPlayerController::resetActors(FHistory *history) {
 	// Reset all actors to their initial start position and spawn new ghost objects to repeat their previous run
-
-  index = 0;
+	history->bfinished = false;
   for (auto &itr : history->histMap) {
 	  FObjectInfo* info = itr.Value;
 	  UStaticMeshComponent* mesh = info->actor->GetStaticMeshComponent();
@@ -143,8 +140,9 @@ void AArdanPlayerController::resetActors(FHistory *history) {
 	  // Check if actor has an initial position and reset to it
 	  if (info->hist->Num()) {
 		  FObjectMeta *meta = (*info->hist)[0];
+			info->index = 0;
 			info->actor->SetActorEnableCollision(false);
-			info->actor->StaticMeshComponent->SetMobility(EComponentMobility::Movable);
+			info->actor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
 		  info->actor->SetActorTransform(meta->transform);
 		  mesh->SetPhysicsLinearVelocity(meta->velocity);
 		  mesh->SetPhysicsAngularVelocity(meta->angularVelocity);
@@ -201,7 +199,7 @@ void AArdanPlayerController::initHist() {
 		AStaticMeshActor *actor = *ActorItr;
 
 		// Check if actor can actually move, if not don't bother recording.
-		if (!actor->StaticMeshComponent->Mobility) continue;
+		if (!actor->GetStaticMeshComponent()->Mobility) continue;
 		UE_LOG(LogNet, Log, TEXT("A: %s"), *actor->GetName());
 
 		// Set up actorInfo object to record actor history
@@ -228,6 +226,7 @@ void AArdanPlayerController::copyActors(FHistory* history) {
 		/* Create history in current history*/
 		FObjectInfo *actorInfo = new FObjectInfo();
 		actorInfo->actor = newb;
+		actorInfo->ancestor = info->actor;
 		actorInfo->hist = new TArray<FObjectMeta*>();
 		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentHistory->histMap.Add(newb->GetName(), actorInfo);
@@ -253,8 +252,7 @@ void AArdanPlayerController::replayPressed() {
 	APawn *newa = GetWorld()->SpawnActorAbsolute<APawn>(Pawn->GetClass(), Pawn->GetTransform(), spawnParams);
 }
 
-void AArdanPlayerController::PlayerTick(float DeltaTime)
-{
+void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
   curTime += DeltaTime;
 	APawn* const Pawn = GetPawn();
@@ -267,7 +265,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime)
     replayTime += DeltaTime;
     //UE_LOG(LogNet, Log, TEXT("ReplayTime: %f"), replayTime);
 		for (FHistory *history : histories) {
-			replayActors(history);
+			if (!history->bfinished) replayActors(history);
 		}
     // APawn *npawn = (APawn *) GetWorld()->SpawnActor(APawn::StaticClass(), NULL, NULL, NULL, Pawn, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     // NewSubObject = NewObject<UObject>(Pawn);

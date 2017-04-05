@@ -29,7 +29,9 @@ USTRUCT()
 struct FObjectInfo {
 	GENERATED_BODY()
 	AStaticMeshActor *actor;
+	AStaticMeshActor *ancestor;
 	TArray<FObjectMeta*> *hist;
+	int index;
 	bool bisGhost = false;
 };
 
@@ -37,6 +39,7 @@ USTRUCT()
 struct FHistory {
 	GENERATED_BODY()
 	TMap<FString, FObjectInfo*> histMap;
+	bool bfinished = false;
 	int level;
 };
 
