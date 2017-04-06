@@ -102,6 +102,8 @@ protected:
 	void resetActors(FHistory *history);
 	void replayPressed();
 
+	void colourActor(AStaticMeshActor * mesh);
+
 
 	private:
 		TArray<FHistory*> histories;

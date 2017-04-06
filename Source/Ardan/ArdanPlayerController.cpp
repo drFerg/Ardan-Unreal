@@ -12,6 +12,22 @@
 #include "Runtime/Engine/Classes/Camera/CameraActor.h"
 #include "ArdanCharacter.h"
 
+template <typename ObjClass>
+static FORCEINLINE ObjClass* LoadObjFromPath(const FName& Path)
+{
+	if (Path == NAME_None) return NULL;
+	//~
+
+	return Cast<ObjClass>(StaticLoadObject(ObjClass::StaticClass(), NULL, *Path.ToString()));
+}
+
+static FORCEINLINE UMaterialInterface* LoadMatFromPath(const FName& Path)
+{
+	if (Path == NAME_None) return NULL;
+	//~
+
+	return LoadObjFromPath<UMaterialInterface>(Path);
+}
 
 template<class T> T* SpawnActor(UWorld* world,
   FVector const& Location, FRotator const& Rotation,
@@ -223,6 +239,8 @@ void AArdanPlayerController::copyActors(FHistory* history) {
 		newb->SetActorTransform(info->actor->GetActorTransform());
 		// renable collision
 		newb->SetActorEnableCollision(true);
+		
+
 		/* Create history in current history*/
 		FObjectInfo *actorInfo = new FObjectInfo();
 		actorInfo->actor = newb;
@@ -230,6 +248,9 @@ void AArdanPlayerController::copyActors(FHistory* history) {
 		actorInfo->hist = new TArray<FObjectMeta*>();
 		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentHistory->histMap.Add(newb->GetName(), actorInfo);
+
+		// Apply Ghost material to old model
+		colourActor(info->actor);
 	}
 }
 
@@ -250,6 +271,26 @@ void AArdanPlayerController::replayPressed() {
 	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	spawnParams.Template = NULL;
 	APawn *newa = GetWorld()->SpawnActorAbsolute<APawn>(Pawn->GetClass(), Pawn->GetTransform(), spawnParams);
+}
+
+void AArdanPlayerController::colourActor(AStaticMeshActor *mesh) {
+	//UMaterialInstanceDynamic* TheMatInst = UMaterialInstanceDynamic::Create(BaseMat, this); //BaseMat must have material parameter called "Color"
+
+	FLinearColor Red = FLinearColor(1, 1, 1, 1);
+	//Lerp Color
+	//FLinearColor InterpedColor = FMath::Lerp(Red, Green, TheColorAlpha);
+
+	//set Material Param
+	//static ConstructorHelpers::FObjectFinder <UMaterialInterface>transparent_mat(TEXT("Material'/Game/Materials/Transparency_Material'"));
+	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/Transparency_Material.Transparency_Material'"));
+	
+	//UMaterialInstanceDynamic* mat = mesh->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
+	//Set Material
+	//mat->BlendMode = BLEND_Translucent;
+	//mat->SetVectorParameterValue(FName("BaseColor"), Red);
+	//mat->SetScalarParameterValue(FName("Opacity"), 0.5);
+
+	mesh->GetStaticMeshComponent()->SetMaterial(0, mat);
 }
 
 void AArdanPlayerController::PlayerTick(float DeltaTime) {
@@ -566,3 +607,5 @@ void AArdanPlayerController::ScrollDown() {
 			Pawn->GetCameraBoom()->SetWorldRotation(rot);
 		}
 }
+
+
