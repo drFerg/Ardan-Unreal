@@ -162,7 +162,8 @@ void AArdanPlayerController::resetActors(FHistory *history) {
 		  info->actor->SetActorTransform(meta->transform);
 		  mesh->SetPhysicsLinearVelocity(meta->velocity);
 		  mesh->SetPhysicsAngularVelocity(meta->angularVelocity);
-			
+			// Apply Ghost material to old model
+			ghostActor(info->actor, float(1) / history->level);
 			//UE_LOG(LogNet, Log, TEXT("(%d)A: %s : %s : %s"), z++, *info->actor->GetName(), *info->actor->GetClass()->GetName(), *info->actor->GetTransform().ToString());
 
 			
@@ -240,7 +241,8 @@ void AArdanPlayerController::copyActors(FHistory* history) {
 		// renable collision
 		newb->SetActorEnableCollision(true);
 		
-
+		// Apply Ghost material to old model
+		ghostActor(newb, 1.0);
 		/* Create history in current history*/
 		FObjectInfo *actorInfo = new FObjectInfo();
 		actorInfo->actor = newb;
@@ -249,8 +251,7 @@ void AArdanPlayerController::copyActors(FHistory* history) {
 		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentHistory->histMap.Add(newb->GetName(), actorInfo);
 
-		// Apply Ghost material to old model
-		colourActor(info->actor);
+		
 	}
 }
 
@@ -260,10 +261,11 @@ void AArdanPlayerController::replayPressed() {
   replayTime = 0;
 	FHistory* oldHistory = currentHistory;
 	histories.Push(currentHistory);
-	currentHistory = new FHistory();
 	for (FHistory *history : histories) {
 		resetActors(history);
+		history->level++;
 	}
+	currentHistory = new FHistory();
 	copyActors(oldHistory);
 	APawn* const Pawn = GetPawn();
 	int z = 0;
@@ -273,8 +275,9 @@ void AArdanPlayerController::replayPressed() {
 	APawn *newa = GetWorld()->SpawnActorAbsolute<APawn>(Pawn->GetClass(), Pawn->GetTransform(), spawnParams);
 }
 
-void AArdanPlayerController::colourActor(AStaticMeshActor *mesh) {
-	//UMaterialInstanceDynamic* TheMatInst = UMaterialInstanceDynamic::Create(BaseMat, this); //BaseMat must have material parameter called "Color"
+void AArdanPlayerController::ghostActor(AStaticMeshActor *mesh, float amount) {
+	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/Transparency_Material.Transparency_Material'"));
+	UMaterialInstanceDynamic* matInst = UMaterialInstanceDynamic::Create(mat, this); //BaseMat must have material parameter called "Color"
 
 	FLinearColor Red = FLinearColor(1, 1, 1, 1);
 	//Lerp Color
@@ -282,15 +285,15 @@ void AArdanPlayerController::colourActor(AStaticMeshActor *mesh) {
 
 	//set Material Param
 	//static ConstructorHelpers::FObjectFinder <UMaterialInterface>transparent_mat(TEXT("Material'/Game/Materials/Transparency_Material'"));
-	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/Transparency_Material.Transparency_Material'"));
 	
 	//UMaterialInstanceDynamic* mat = mesh->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
 	//Set Material
 	//mat->BlendMode = BLEND_Translucent;
 	//mat->SetVectorParameterValue(FName("BaseColor"), Red);
-	//mat->SetScalarParameterValue(FName("Opacity"), 0.5);
-
-	mesh->GetStaticMeshComponent()->SetMaterial(0, mat);
+	matInst->SetScalarParameterValue(FName("Transparency_Amount"), amount);
+	//mat->GetScalarParameterValue()
+	UE_LOG(LogNet, Log, TEXT("Opacity: %f"), amount);
+	mesh->GetStaticMeshComponent()->SetMaterial(0, matInst);
 }
 
 void AArdanPlayerController::PlayerTick(float DeltaTime) {

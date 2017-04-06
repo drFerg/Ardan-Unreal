@@ -40,7 +40,7 @@ struct FHistory {
 	GENERATED_BODY()
 	TMap<FString, FObjectInfo*> histMap;
 	bool bfinished = false;
-	int level;
+	int level = 1;
 };
 
 UCLASS()
@@ -102,7 +102,7 @@ protected:
 	void resetActors(FHistory *history);
 	void replayPressed();
 
-	void colourActor(AStaticMeshActor * mesh);
+	void ghostActor(AStaticMeshActor * mesh, float amount);
 
 
 	private:
