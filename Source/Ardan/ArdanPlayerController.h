@@ -28,8 +28,8 @@ struct FObjectMeta {
 USTRUCT()
 struct FObjectInfo {
 	GENERATED_BODY()
-	AStaticMeshActor *actor;
-	AStaticMeshActor *ancestor;
+	AActor *actor;
+	AActor *ancestor;
 	TArray<FObjectMeta*> *hist;
 	int index;
 	bool bisGhost = false;
@@ -95,23 +95,32 @@ protected:
 	void speedNormal();
 	void speedFast();
 	void recordActors(float deltaTime);
+	void recordPawnActors(float deltaTime);
 	void initHist();
-	void copyActors(FHistory * history);
-	void rewindActors();
+	void copyActors(FHistory* dstHistory, FHistory *srcHistory);
+	void copyPawnActors(FHistory * dstHistory, FHistory * srcHistory);
+	void rewindMeshActors();
+	void rewindPawnActors();
 	void replayActors(FHistory *history);
+	void replayPawnActors(FHistory * history);
 	void resetActors(FHistory *history);
+	void resetPawnActors(FHistory * history);
 	void replayPressed();
 
 	void ghostActor(AStaticMeshActor * mesh, float amount);
 
+	void colourActor(AStaticMeshActor * mesh);
+
 
 	private:
+		TArray<FHistory*> pawnHistories;
 		TArray<FHistory*> histories;
 		UObject* NewSubObject;
 		TArray<FTransform*> locHistory;
 		TArray<ATimeSphere*> timeSpheres;
 		TArray<void *> timelines;
 		FHistory *currentHistory;
+		FHistory *currentPawnHistory;
 		int index = 0;
 		float replayTime = 0;
 		float curTime = 0;
