@@ -124,10 +124,10 @@ void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 void AArdanPlayerController::replayActors(FHistory *history) {
 	for (auto &itr : history->histMap) {
 		FObjectInfo* info = itr.Value;
-		// Only rewind if it's a ghost, otherwise it is alive and recording
-		//if (!info->bisGhost) continue;
 		UStaticMeshComponent* mesh = ((AStaticMeshActor*)info->actor)->GetStaticMeshComponent();
 		TArray<FObjectMeta*>* hist = info->hist;
+		/* Make sure the mesh is movable */
+		mesh->SetMobility(EComponentMobility::Movable);
 		while (info->index < hist->Num() && (*hist)[info->index]->timeStamp <= curTime) {
 			//UE_LOG(LogNet, Log, TEXT("TSTAMP: %f <:> %f"), (*hist)[index]->timeStamp, curTime);
 			FObjectMeta *meta = (*hist)[info->index];
@@ -151,10 +151,11 @@ void AArdanPlayerController::replayPawnActors(FHistory *history) {
 		FObjectInfo* info = itr.Value;
 		TArray<FObjectMeta*>* hist = info->hist;
 		while (info->index < hist->Num() && (*hist)[info->index]->timeStamp <= curTime) {
-			//UE_LOG(LogNet, Log, TEXT("TSTAMP: %f <:> %f"), (*hist)[index]->timeStamp, curTime);
 			FObjectMeta *meta = (*hist)[info->index];
-			//info->actor->SetActorTransform(meta->transform);
-			((APawn*)info->actor)->AddMovementInput(meta->velocity);
+			UE_LOG(LogNet, Log, TEXT("inputvector: %s"), *(meta->velocity.ToString()));
+
+			info->actor->SetActorTransform(meta->transform);
+			//((APawn*)info->actor)->AddMovementInput(meta->velocity);
 			info->index += 1;
 			if (info->index >= (*hist).Num()) {
 				//UE_LOG(LogNet, Log, TEXT("BREAK"));
@@ -173,7 +174,6 @@ void AArdanPlayerController::resetActors(FHistory *history) {
   for (auto &itr : history->histMap) {
 	  FObjectInfo* info = itr.Value;
 	  UStaticMeshComponent* mesh = ((AStaticMeshActor*)info->actor)->GetStaticMeshComponent();
-		//info->bisGhost = true;
 	  // Check if actor has an initial position and reset to it
 	  if (info->hist->Num()) {
 			info->index = 0;
@@ -255,27 +255,36 @@ void AArdanPlayerController::recordPawnActors(float deltaTime) {
 	}
 }
 
-void AArdanPlayerController::rewindMeshActors() {
+void AArdanPlayerController::rewindMeshActors(FHistory *history, bool freeze) {
 	// Rewind each recorded actor one tick
-	for (auto &itr : currentHistory->histMap) {
+	
+	history->bfinished = false;
+	for (auto &itr : history->histMap) {
 		FObjectInfo *actorInfo = itr.Value;
-		if (actorInfo->hist->Num()) {
-			FObjectMeta *meta = (*actorInfo->hist)[actorInfo->index--];
-			UStaticMeshComponent *mesh = ((AStaticMeshActor *)actorInfo->actor)->GetStaticMeshComponent();
-
+		UStaticMeshComponent *mesh = ((AStaticMeshActor *)actorInfo->actor)->GetStaticMeshComponent();
+		//UE_LOG(LogNet, Log, TEXT("ATime: %f : %f: %d"), (*actorInfo->hist)[actorInfo->index]->timeStamp, curTime, actorInfo->index);
+		while (actorInfo->index > 0 && (*actorInfo->hist)[actorInfo->index - 1]->timeStamp >= curTime) {
+			actorInfo->index--;
+			FObjectMeta *meta = (*actorInfo->hist)[actorInfo->index];
+			mesh->SetMobility(EComponentMobility::Movable);
 			actorInfo->actor->SetActorTransform(meta->transform);
 			mesh->SetPhysicsLinearVelocity(meta->velocity);
 			mesh->SetPhysicsAngularVelocity(meta->angularVelocity);
+			//actorInfo->index--;
 		}
+		// Check we haven't reached the beginning of time, if so set to static so it physics doesn't take over
+		if (freeze) mesh->SetMobility(EComponentMobility::Stationary);
 	}
 }
 
-void AArdanPlayerController::rewindPawnActors() {
+
+void AArdanPlayerController::rewindPawnActors(FHistory *history) {
 	// Rewind each recorded actor one tick
-	for (auto &itr : currentPawnHistory->histMap) {
+	for (auto &itr : history->histMap) {
 		FObjectInfo *actorInfo = itr.Value;
 		if (actorInfo->hist->Num()) {
-			FObjectMeta *meta = (*actorInfo->hist)[actorInfo->index--];
+			if (actorInfo->index == 0) continue;
+			FObjectMeta *meta = (*actorInfo->hist)[--(actorInfo->index)];
 			actorInfo->actor->SetActorTransform(meta->transform);
 		}
 	}
@@ -404,39 +413,48 @@ void AArdanPlayerController::colourActor(AStaticMeshActor *mesh) {
 
 void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
-  curTime += DeltaTime;
+  
 	APawn* const Pawn = GetPawn();
   FVector sourceLoc = Pawn->GetActorLocation();
 	FRotator sourceRot = Pawn->GetActorRotation();
   FTransform *transform = new FTransform();
   *transform = Pawn->GetTransform();
 	/* Pop and set actors old location else push current location onto stack */
-  if (bReplay) {
-    replayTime += DeltaTime;
-    //UE_LOG(LogNet, Log, TEXT("ReplayTime: %f"), replayTime);
-		for (FHistory *history : histories) {
-			if (!history->bfinished) replayActors(history);
-		}
-		for (FHistory *history : pawnHistories) {
-			if (!history->bfinished) replayPawnActors(history);
-		}
-    // APawn *npawn = (APawn *) GetWorld()->SpawnActor(APawn::StaticClass(), NULL, NULL, NULL, Pawn, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-    // NewSubObject = NewObject<UObject>(Pawn);
-		recordActors(DeltaTime);
-		recordPawnActors(DeltaTime);
 
-  }
-	else if (bReverse) {
-			//Pawn->SetActorTransform(*locHistory.Pop(false));
-      rewindMeshActors();
-			rewindPawnActors();
-      return;
+	if (bReverse) {
+		replayTime -= DeltaTime;
+		curTime -= DeltaTime;
+
+		rewindMeshActors(currentHistory, false);
+		for (FHistory *history : histories) {
+			rewindMeshActors(history, true);
+		}
+
+		rewindPawnActors(currentPawnHistory);
+		for (FHistory *history : pawnHistories) {
+			rewindPawnActors(history);
+		}
+		return;
 	}
 	else {
-		//locHistory.Push(transform);
-    recordActors(DeltaTime);
+		curTime += DeltaTime;
+		recordActors(DeltaTime);
 		recordPawnActors(DeltaTime);
+		if (bReplay) {
+			replayTime += DeltaTime;
+			for (FHistory *history : histories) {
+				if (!history->bfinished) replayActors(history);
+			}
+			for (FHistory *history : pawnHistories) {
+				if (!history->bfinished) replayPawnActors(history);
+			}
+			/*recordActors(DeltaTime);
+			recordPawnActors(DeltaTime);*/
+		}
 	}
+  
+	
+	
 
 	// /* Working out FPS */
 	elapsed += DeltaTime;

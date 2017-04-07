@@ -99,8 +99,8 @@ protected:
 	void initHist();
 	void copyActors(FHistory* dstHistory, FHistory *srcHistory);
 	void copyPawnActors(FHistory * dstHistory, FHistory * srcHistory);
-	void rewindMeshActors();
-	void rewindPawnActors();
+	void rewindMeshActors(FHistory *history, bool freeze);
+	void rewindPawnActors(FHistory *history);
 	void replayActors(FHistory *history);
 	void replayPawnActors(FHistory * history);
 	void resetActors(FHistory *history);
