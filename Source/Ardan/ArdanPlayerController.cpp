@@ -127,18 +127,18 @@ void AArdanPlayerController::replayActors(FHistory *history) {
 		UStaticMeshComponent* mesh = ((AStaticMeshActor*)info->actor)->GetStaticMeshComponent();
 		TArray<FObjectMeta*>* hist = info->hist;
 		/* Make sure the mesh is movable */
-		mesh->SetMobility(EComponentMobility::Movable);
+		//mesh->SetMobility(EComponentMobility::Movable);
 		while (info->index < hist->Num() && (*hist)[info->index]->timeStamp <= curTime) {
 			//UE_LOG(LogNet, Log, TEXT("TSTAMP: %f <:> %f"), (*hist)[index]->timeStamp, curTime);
 			FObjectMeta *meta = (*hist)[info->index];
+			mesh->SetSimulatePhysics(false);
 			info->actor->SetActorTransform(meta->transform);
 			mesh->SetPhysicsLinearVelocity(meta->velocity);
 			mesh->SetPhysicsAngularVelocity(meta->angularVelocity);
 			info->index += 1;
 			if (info->index >= (*hist).Num()) {
 				//UE_LOG(LogNet, Log, TEXT("BREAK"));
-				/*info->actor->StaticMeshComponent->SetSimulatePhysics(false);*/
-				mesh->SetMobility(EComponentMobility::Stationary);
+				//mesh->SetMobility(EComponentMobility::Stationary);
 				history->bfinished = true;
 				break;
 			}
@@ -152,7 +152,7 @@ void AArdanPlayerController::replayPawnActors(FHistory *history) {
 		TArray<FObjectMeta*>* hist = info->hist;
 		while (info->index < hist->Num() && (*hist)[info->index]->timeStamp <= curTime) {
 			FObjectMeta *meta = (*hist)[info->index];
-			UE_LOG(LogNet, Log, TEXT("inputvector: %s"), *(meta->velocity.ToString()));
+			//UE_LOG(LogNet, Log, TEXT("inputvector: %s"), *(meta->velocity.ToString()));
 
 			info->actor->SetActorTransform(meta->transform);
 			//((APawn*)info->actor)->AddMovementInput(meta->velocity);
@@ -180,7 +180,7 @@ void AArdanPlayerController::resetActors(FHistory *history) {
 		  FObjectMeta *meta = (*info->hist)[info->index];
 			info->actor->SetActorTransform(meta->transform);
 			info->actor->SetActorEnableCollision(false);
-			mesh->SetMobility(EComponentMobility::Movable);
+			//mesh->SetMobility(EComponentMobility::Movable);
 			mesh->SetPhysicsLinearVelocity(meta->velocity);
 		  mesh->SetPhysicsAngularVelocity(meta->angularVelocity);
 			// Apply Ghost material to old model
@@ -248,7 +248,7 @@ void AArdanPlayerController::recordPawnActors(float deltaTime) {
 		FTransform curTrans = info->actor->GetTransform();
 		FObjectMeta *meta = new FObjectMeta();
 		meta->transform = curTrans;
-		meta->velocity = ((APawn*)info->actor)->GetLastMovementInputVector();
+		meta->velocity = ((APawn*)info->actor)->GetPendingMovementInputVector();
 		meta->deltaTime = deltaTime;
 		meta->timeStamp = curTime;
 		info->hist->Add(meta);
@@ -273,7 +273,7 @@ void AArdanPlayerController::rewindMeshActors(FHistory *history, bool freeze) {
 			//actorInfo->index--;
 		}
 		// Check we haven't reached the beginning of time, if so set to static so it physics doesn't take over
-		if (freeze) mesh->SetMobility(EComponentMobility::Stationary);
+		//if (freeze) mesh->SetMobility(EComponentMobility::Stationary);
 	}
 }
 
@@ -339,7 +339,8 @@ void AArdanPlayerController::copyActors(FHistory* dstHistory, FHistory *srcHisto
 		/* Create history in current history*/
 		FObjectInfo *actorInfo = new FObjectInfo();
 		actorInfo->actor = newb;
-		actorInfo->ancestor = info->actor;
+		actorInfo->ancestor = info;
+		info->descendant = actorInfo;
 		actorInfo->hist = new TArray<FObjectMeta*>();
 		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		dstHistory->histMap.Add(newb->GetName(), actorInfo);
@@ -354,6 +355,7 @@ void AArdanPlayerController::copyPawnActors(FHistory* dstHistory, FHistory *srcH
 		FObjectInfo* info = iter.Value;
 		spawnParams.Template = info->actor;
 		APawn *newb = GetWorld()->SpawnActor<APawn>(info->actor->GetClass(), info->actor->GetActorTransform(), spawnParams);
+		// Possess the new actor
 		if (GetPawn() == info->actor) this->Possess(newb);
 		//force new actor to old actors position 
 		newb->SetActorTransform(info->actor->GetActorTransform());
@@ -365,13 +367,28 @@ void AArdanPlayerController::copyPawnActors(FHistory* dstHistory, FHistory *srcH
 		/* Create history in current history*/
 		FObjectInfo *actorInfo = new FObjectInfo();
 		actorInfo->actor = newb;
-		actorInfo->ancestor = info->actor;
+		actorInfo->ancestor = info;
+		info->descendant = actorInfo;
 		actorInfo->hist = new TArray<FObjectMeta*>();
 		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		dstHistory->histMap.Add(newb->GetName(), actorInfo);
 	}
 }
 
+void AArdanPlayerController::diff(FObjectInfo* info) {
+	if (!info || !info->ancestor) return;
+	FObjectInfo *anc = info->ancestor;
+	float dist = anc->actor->GetDistanceTo(info->actor);
+	UE_LOG(LogNet, Log, TEXT("dIST: %f"), dist);
+	if (dist > 50.0) {
+		UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/TimeSphere.TimeSphere'"));
+		((USkeletalMeshComponent*) info->actor->GetComponentByClass(USkeletalMeshComponent::StaticClass()))->SetMaterial(0, mat);
+	}
+	else {
+		UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Mannequin/Character/Materials/M_UE4Man_Body.M_UE4Man_Body'"));
+		((USkeletalMeshComponent*)info->actor->GetComponentByClass(USkeletalMeshComponent::StaticClass()))->SetMaterial(0, mat);
+	}
+}
 
 void AArdanPlayerController::replayPressed() {
   bReplay = true;
@@ -407,13 +424,15 @@ void AArdanPlayerController::ghostActor(AStaticMeshActor *mesh, float amount) {
 }
 
 void AArdanPlayerController::colourActor(AStaticMeshActor *mesh) {
-	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial''"));
+	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial'"));
 	mesh->GetStaticMeshComponent()->SetMaterial(0, mat);
 }
 
 void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
-  
+
+	if (UGameplayStatics::IsGamePaused(GetWorld())) return;
+
 	APawn* const Pawn = GetPawn();
   FVector sourceLoc = Pawn->GetActorLocation();
 	FRotator sourceRot = Pawn->GetActorRotation();
@@ -453,7 +472,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		}
 	}
   
-	
+	diff(*(currentPawnHistory->histMap.Find(GetPawn()->GetName())));
 	
 
 	// /* Working out FPS */
@@ -642,7 +661,7 @@ void AArdanPlayerController::reversePressed() {
 
 void AArdanPlayerController::reverseReleased() {
   bReverse = false;
-  Pause();
+  //Pause();
 }
 
 void AArdanPlayerController::NextCamera() {

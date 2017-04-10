@@ -29,7 +29,8 @@ USTRUCT()
 struct FObjectInfo {
 	GENERATED_BODY()
 	AActor *actor;
-	AActor *ancestor;
+	FObjectInfo *ancestor;
+	FObjectInfo *descendant;
 	TArray<FObjectMeta*> *hist;
 	int index;
 	bool bisGhost = false;
@@ -99,6 +100,7 @@ protected:
 	void initHist();
 	void copyActors(FHistory* dstHistory, FHistory *srcHistory);
 	void copyPawnActors(FHistory * dstHistory, FHistory * srcHistory);
+	void diff(FObjectInfo * info);
 	void rewindMeshActors(FHistory *history, bool freeze);
 	void rewindPawnActors(FHistory *history);
 	void replayActors(FHistory *history);
