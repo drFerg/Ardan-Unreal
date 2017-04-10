@@ -2,7 +2,22 @@
 #include "Ardan.h"
 #include "TimeSphere.h"
 
+template <typename ObjClass>
+static FORCEINLINE ObjClass* LoadObjFromPath(const FName& Path)
+{
+	if (Path == NAME_None) return NULL;
+	//~
 
+	return Cast<ObjClass>(StaticLoadObject(ObjClass::StaticClass(), NULL, *Path.ToString()));
+}
+
+static FORCEINLINE UMaterialInterface* LoadMatFromPath(const FName& Path)
+{
+	if (Path == NAME_None) return NULL;
+	//~
+
+	return LoadObjFromPath<UMaterialInterface>(Path);
+}
 // Sets default values
 ATimeSphere::ATimeSphere(const FObjectInitializer &ObjectInitializer) :Super(ObjectInitializer)
 {
@@ -13,6 +28,9 @@ ATimeSphere::ATimeSphere(const FObjectInitializer &ObjectInitializer) :Super(Obj
     // Create and position a mesh component so we can see where our sphere is
     UStaticMeshComponent* SphereVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
     RootComponent = SphereVisual;
+		
+		UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/TimeSphere.TimeSphere'"));
+		SphereVisual->SetMaterial(0, mat);
 
     // Our root component will be a sphere that reacts to physics
     USphereComponent* SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("RootComponent"));
@@ -27,7 +45,7 @@ ATimeSphere::ATimeSphere(const FObjectInitializer &ObjectInitializer) :Super(Obj
     {
         SphereVisual->SetStaticMesh(SphereVisualAsset.Object);
         SphereVisual->SetRelativeLocation(FVector(0.0f, 0.0f, -40.0f));
-        SphereVisual->SetWorldScale3D(FVector(0.2f));
+        SphereVisual->SetWorldScale3D(FVector(0.1f));
         SphereVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
     }
