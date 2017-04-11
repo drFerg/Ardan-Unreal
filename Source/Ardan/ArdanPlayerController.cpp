@@ -353,7 +353,7 @@ void AArdanPlayerController::copyPawnActors(FHistory* dstHistory, FHistory *srcH
 	spawnParams.Template = NULL;
 	for (auto &iter : srcHistory->histMap) {
 		FObjectInfo* info = iter.Value;
-		spawnParams.Template = info->actor;
+		//spawnParams.Template = info->actor;
 		APawn *newb = GetWorld()->SpawnActor<APawn>(info->actor->GetClass(), info->actor->GetActorTransform(), spawnParams);
 		// Possess the new actor
 		if (GetPawn() == info->actor) this->Possess(newb);
