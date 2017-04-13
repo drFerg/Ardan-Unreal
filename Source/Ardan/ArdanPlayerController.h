@@ -109,9 +109,9 @@ protected:
 	void resetPawnActors(FHistory * history);
 	void replayPressed();
 
-	void ghostActor(AStaticMeshActor * mesh, float amount);
+	void ghostActor(AActor * mesh, float amount);
 
-	void colourActor(AStaticMeshActor * mesh);
+	void colourActor(AActor * mesh);
 
 
 	private:

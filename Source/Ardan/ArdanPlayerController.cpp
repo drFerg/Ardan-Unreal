@@ -351,17 +351,21 @@ void AArdanPlayerController::copyPawnActors(FHistory* dstHistory, FHistory *srcH
 	FActorSpawnParameters spawnParams;
 	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	spawnParams.Template = NULL;
+	//Pause();
 	for (auto &iter : srcHistory->histMap) {
 		FObjectInfo* info = iter.Value;
+		//if (info->actor->GetActorClass() == 
 		//spawnParams.Template = info->actor;
+		UE_LOG(LogNet, Log, TEXT("A: %s"), *(info->actor->GetClass()->GetName()));
 		APawn *newb = GetWorld()->SpawnActor<APawn>(info->actor->GetClass(), info->actor->GetActorTransform(), spawnParams);
 		// Possess the new actor
+		newb->SpawnDefaultController();
 		if (GetPawn() == info->actor) this->Possess(newb);
 		//force new actor to old actors position 
 		newb->SetActorTransform(info->actor->GetActorTransform());
 		// renable collision
 		newb->SetActorEnableCollision(true);
-
+		ghostActor(info->actor, 0.5);
 		// Apply normal material to new model
 		//colourActor(newb);
 		/* Create history in current history*/
@@ -373,6 +377,7 @@ void AArdanPlayerController::copyPawnActors(FHistory* dstHistory, FHistory *srcH
 		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		dstHistory->histMap.Add(newb->GetName(), actorInfo);
 	}
+	//Pause();
 }
 
 void AArdanPlayerController::diff(FObjectInfo* info) {
@@ -415,17 +420,19 @@ void AArdanPlayerController::replayPressed() {
 	int z = 0;
 }
 
-void AArdanPlayerController::ghostActor(AStaticMeshActor *mesh, float amount) {
+void AArdanPlayerController::ghostActor(AActor *mesh, float amount) {
 	
 	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/Transparency_Material.Transparency_Material'"));
 	UMaterialInstanceDynamic* matInst = UMaterialInstanceDynamic::Create(mat, this); //BaseMat must have material parameter called "Color"
 	matInst->SetScalarParameterValue(FName("Transparency_Amount"), amount);
-	mesh->GetStaticMeshComponent()->SetMaterial(0, matInst);
+	((UMeshComponent*) mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, matInst);
+	//mesh->GetStaticMeshComponent()->SetMaterial(0, matInst);
 }
 
-void AArdanPlayerController::colourActor(AStaticMeshActor *mesh) {
+void AArdanPlayerController::colourActor(AActor *mesh) {
 	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial'"));
-	mesh->GetStaticMeshComponent()->SetMaterial(0, mat);
+	//mesh->GetStaticMeshComponent()->SetMaterial(0, mat);
+	((UMeshComponent*)mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, mat);
 }
 
 void AArdanPlayerController::PlayerTick(float DeltaTime) {
