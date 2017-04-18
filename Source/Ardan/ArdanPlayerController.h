@@ -8,6 +8,7 @@
 #include <flatbuffers/flatbuffers.h>
 #include "RunnableConnection.h"
 #include "Sensor.h"
+#include "SensorManager.h"
 #include "TimeSphere.h"
 
 #include "unrealpkts_generated.h"
@@ -115,6 +116,7 @@ protected:
 
 
 	private:
+		SensorManager *sensorManager;
 		TArray<FHistory*> pawnHistories;
 		TArray<FHistory*> histories;
 		UObject* NewSubObject;

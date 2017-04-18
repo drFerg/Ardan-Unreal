@@ -76,7 +76,7 @@ AArdanPlayerController::AArdanPlayerController() {
 void AArdanPlayerController::BeginPlay() {
   Super::BeginPlay();
   conns = FRunnableConnection::create(5000, &packetQ);
-  if (conns) {UE_LOG(LogNet, Log, TEXT("conns created"));}
+  if (conns) {UE_LOG(LogNet, Log, TEXT("Runnable Connection created"));}
   else { UE_LOG(LogNet, Log, TEXT("conns failed"));}
   // conns->Init();
   // conns->Run();
@@ -84,7 +84,6 @@ void AArdanPlayerController::BeginPlay() {
 	TSubclassOf<ACameraActor> ClassToFind;
 	cameras.Empty();
 	currentCam = 0;
-	// UGameplayStatics::GetAllActorsOfClass(GetWorld(), ClassToFind, cameras);
 	for(TActorIterator<AActor> It(GetWorld(), ACameraActor::StaticClass()); It; ++It)
 	{
 		ACameraActor* Actor = (ACameraActor*)*It;
@@ -96,20 +95,8 @@ void AArdanPlayerController::BeginPlay() {
 	UE_LOG(LogNet, Log, TEXT("Found %d cameras"), cameras.Num());
 	//if (cameras.Num()) NextCamera();
 
-  /* Find all sensors in the world to handle connections to Cooja */
- 	for (TActorIterator<ASensor> ActorItr(GetWorld()); ActorItr; ++ActorItr)
-	{
-		if (ActorItr->GetClass() == ASensor::StaticClass()) {
-			//UE_LOG(LogNet, Log, TEXT("Name: %s"), *(ActorItr->GetName()));
-			//UE_LOG(LogNet, Log, TEXT("Class: %s"),
-					//*(ActorItr->GetClass()->GetDesc()));
-			//UE_LOG(LogNet, Log, TEXT("Location: %s"),
-				//	*(ActorItr->GetActorLocation().ToString()));
-			sensors.Add(ActorItr.operator *());
-			sensorTable.Add(ActorItr->ID, ActorItr.operator *());
-
-		}
-	}
+	sensorManager = new SensorManager(GetWorld());
+	sensorManager->FindSensors();
   initHist();
   UE_LOG(LogNet, Log, TEXT("--START--"));
 }
@@ -119,6 +106,7 @@ void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
     conns->Stop();
     conns->Shutdown();
   }
+	delete sensorManager;
 }
 
 void AArdanPlayerController::replayActors(FHistory *history) {
@@ -531,29 +519,7 @@ void AArdanPlayerController::update_sensors() {
   int count = 0;
   while (count++ < 5 && !packetQ.IsEmpty()){
     packetQ.Dequeue(pkt);
-    if (pkt[0] == LED_PKT && pkt[1] < sensors.Num()) {
-   			//UE_LOG(LogNet, Log, TEXT("LEDPKT"));
-   			ASensor **s = sensorTable.Find(pkt[1]);
-  			if (s == NULL) return;
-        //UE_LOG(LogNet, Log, TEXT("FOUND SENSOR"));
-  			(*s)->SetLed(pkt[2], pkt[3], pkt[4]);
- 		}
-    else if (pkt[0] == RADIO_PKT) {
-  		//UE_LOG(LogNet, Log, TEXT("RMPKT %d (%d)"), pkt[1], pkt[2]);
-  		/* Display radio event */
-  		ASensor **s = sensorTable.Find(pkt[1]);
-  		if (s == NULL) return;
-      FVector sourceLoc = (*s)->GetSensorLocation();
-  		DrawDebugCircle(GetWorld(), sourceLoc, 50.0, 360, colours[pkt[1] % 12], false, 0.5 , 0, 5, FVector(1.f,0.f,0.f), FVector(0.f,1.f,0.f), false);
-  		for (int i = 0; i < pkt[2]; i++) {
-		    ASensor **ss = sensorTable.Find(pkt[3 + i]);
-        if (ss == NULL) continue;
-  			DrawDebugDirectionalArrow(GetWorld(), sourceLoc,
-                                  (*ss)->GetSensorLocation(),
-                    							500.0, colours[pkt[1] % 12],
-                    			 				false, 0.5, 0, 5.0);
-  		}
- 		}
+		sensorManager->ReceivePacket(pkt);
 		free(pkt);
   }
 }

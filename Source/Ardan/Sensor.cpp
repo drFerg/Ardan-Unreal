@@ -13,7 +13,7 @@
 #include "Engine/Channel.h"
 #include <Vector.h>
 #include <Map.h>
-
+#include "RunnableConnection.h"
 #include <flatbuffers/flatbuffers.h>
 #include "unrealpkts_generated.h"
 #include "DrawDebugHelpers.h"
@@ -264,3 +264,11 @@ void ASensor::sendLocationUpdate() {
 //			}
 
 		//}
+
+
+void ASensor::ReceivePacket(uint8* pkt) {
+	if (pkt[0] == LED_PKT) {
+		//UE_LOG(LogNet, Log, TEXT("LEDPKT"));
+		this->SetLed(pkt[2], pkt[3], pkt[4]);
+	}
+}

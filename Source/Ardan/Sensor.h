@@ -34,6 +34,8 @@ public:
 
 	// Called every frame
 	virtual void Tick(float DeltaSeconds) override;
+	void ReceivePacket(uint8 * pkt);
+
 	void Led(int32 led, bool on);
 	void SetLed(uint8 R, uint8 G, uint8 B);
 	FVector GetSensorLocation();
@@ -85,6 +87,7 @@ private:
 	bool active = true;
 	float activeTimer = 0;
 	void sendLocationUpdate();
+
 
 
 
