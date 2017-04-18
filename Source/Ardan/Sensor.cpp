@@ -90,8 +90,7 @@ void ASensor::OnEndOverlap(class AActor* OverlappedActor,
 	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
 
-ASensor::ASensor()
-{
+ASensor::ASensor() {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	/* Check if instantiation is real or just for placement guidlines */
@@ -147,8 +146,7 @@ ASensor::ASensor()
 
 
 // Called when the game starts or when spawned
-void ASensor::BeginPlay()
-{
+void ASensor::BeginPlay() {
 	Super::BeginPlay();
 
 	/* Set up destination address:port to send Cooja messages to */
@@ -178,6 +176,10 @@ void ASensor::BeginPlay()
 	else {
 		UE_LOG(LogNet, Log, TEXT("Node: Not spawned"));
 	}
+	state.R = 0;
+	state.G = 0;
+	state.B = 0;
+
 	prevLocation = SensorActor->GetActorLocation();
 	sendLocationUpdate();
 	UE_LOG(LogNet, Log, TEXT("%d %s"), ID,
@@ -186,8 +188,7 @@ void ASensor::BeginPlay()
 }
 
 // Called every frame
-void ASensor::Tick(float DeltaTime)
-{
+void ASensor::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 	/* Check if actors located within PIR detection range have moved,
 	 * checking their current location vs previous */
@@ -203,17 +204,18 @@ void ASensor::Tick(float DeltaTime)
 	}
 }
 
-void ASensor::Led(int32 led, bool on)
-{
+void ASensor::Led(int32 led, bool on) {
 	if (led > 3 && led < 0) return;
 //UE_LOG(LogNet, Log, TEXT("Node: %s"), *(SensorActor->GetName()))
 	//UE_LOG(LogNet, Log, TEXT("Led: %s (%i)"), *(Leds[led]->GetName()), led);
 	Leds[led]->SetIntensity(on ? LEDON : LEDOFF);
 }
 
-void ASensor::SetLed(uint8 R, uint8 G, uint8 B)
-{
+void ASensor::SetLed(uint8 R, uint8 G, uint8 B) {
 	//UE_LOG(LogNet, Log, TEXT("Node: %s"), *(actor->GetName()))
+	state.R = R;
+	state.G = G;
+	state.B = B;
 	Leds[0]->SetIntensity(R ? LEDON : LEDOFF);
 	Leds[1]->SetIntensity(G ? LEDON : LEDOFF);
 	Leds[2]->SetIntensity(B ? LEDON : LEDOFF);
@@ -271,4 +273,12 @@ void ASensor::ReceivePacket(uint8* pkt) {
 		//UE_LOG(LogNet, Log, TEXT("LEDPKT"));
 		this->SetLed(pkt[2], pkt[3], pkt[4]);
 	}
+}
+
+void ASensor::SnapshotState(float timeStamp) {
+	if (!bstateBeenModified) return;
+	FSensorState* s = new FSensorState();
+	s = state;
+	s->timeStamp = timeStamp;
+	stateHistory.add(s);
 }

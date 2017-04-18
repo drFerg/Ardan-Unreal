@@ -43,3 +43,9 @@ void SensorManager::ReceivePacket(uint8* pkt) {
 		}
 	}
 }
+
+void SensorManager::SnapshotState(float timeStamp) {
+	for (ASensor* sensor : sensors) {
+		sensor->SnapshotState(timeStamp);
+	}
+}

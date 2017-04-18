@@ -17,6 +17,8 @@ public:
 
 	void ReceivePacket(uint8 * pkt);
 
+	void SnapshotState(float timeStamp);
+
 private:
 	UWorld* world;
 	TArray<ASensor*> sensors;
