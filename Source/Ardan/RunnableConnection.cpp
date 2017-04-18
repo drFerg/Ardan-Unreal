@@ -62,6 +62,11 @@ uint32 FRunnableConnection::Run() {
  	while (!stop) { /* Run until told to stop */
 		while (socket->HasPendingData(size)) {
 			pkt = (uint8*) malloc(size);
+			if (!pkt) {
+				UE_LOG(LogNet, Log, TEXT("Connection Thread - Malloc FAILURE!"));
+				stop = true;
+				break;
+			}
 			/* Data available, non-blocking read */
 			socket->RecvFrom(pkt, size, bytesRead, *fromAddr);
 			pktQ->Enqueue(pkt); /* pass on to game-thread */
