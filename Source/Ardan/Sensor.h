@@ -46,6 +46,12 @@ public:
 
 	void SnapshotState(float timeStamp);
 
+	void RewindState(float timeStamp);
+
+	void ReplayState(float timeStamp);
+
+	bool StateIsEqual(FSensorState* a, FSensorState* b);
+
 	void Led(int32 led, bool on);
 	void SetLed(uint8 R, uint8 G, uint8 B);
 	FVector GetSensorLocation();
@@ -85,6 +91,8 @@ public:
 
 private:
 	FSensorState state;
+	TArray<FSensorState*> stateHistory;
+	TArray<TArray<FSensorState*>*> shRecords;
 	TArray<USpotLightComponent*> Leds;
 	ATriggerBase* tb;
 	ISocketSubsystem* sockSubSystem;

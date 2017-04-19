@@ -278,7 +278,25 @@ void ASensor::ReceivePacket(uint8* pkt) {
 void ASensor::SnapshotState(float timeStamp) {
 	if (!bstateBeenModified) return;
 	FSensorState* s = new FSensorState();
-	s = state;
+	*s = state;
 	s->timeStamp = timeStamp;
-	stateHistory.add(s);
+	stateHistory.Add(s);
+}
+
+void ASensor::RewindState(float requestTime) {
+	int i = stateHistory.Num() - 1;
+	FSensorState* s = stateHistory[i];
+	while (i > 0 && s->timeStamp > requestTime) {
+		s = stateHistory[--i];
+	}
+	state = *s;
+}
+
+
+void ASensor::ReplayState(float timeStamp) {
+
+}
+
+bool ASensor::StateIsEqual(FSensorState* a, FSensorState* b) {
+	return (a->R == b->R && a->G == b->G && a->B == a->B);
 }

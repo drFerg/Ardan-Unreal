@@ -49,3 +49,9 @@ void SensorManager::SnapshotState(float timeStamp) {
 		sensor->SnapshotState(timeStamp);
 	}
 }
+
+void SensorManager::RewindState(float timeStamp) {
+	for (ASensor* sensor : sensors) {
+		sensor->RewindState(timeStamp);
+	}
+}

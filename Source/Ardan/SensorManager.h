@@ -19,6 +19,8 @@ public:
 
 	void SnapshotState(float timeStamp);
 
+	void RewindState(float timeStamp);
+
 private:
 	UWorld* world;
 	TArray<ASensor*> sensors;
