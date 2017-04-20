@@ -28,6 +28,13 @@ struct FSensorState {
 	float timeStamp;
 };
 
+USTRUCT()
+struct FSensorHistory {
+	GENERATED_BODY()
+	TArray<FSensorState*> timeline;
+	int index = 0;
+};
+
 UCLASS()
 class ARDAN_API ASensor : public AActor
 {
@@ -51,6 +58,14 @@ public:
 	void ReplayState(float timeStamp);
 
 	bool StateIsEqual(FSensorState* a, FSensorState* b);
+
+	void ReflectState();
+
+	void ResetTimeline();
+
+	void NewTimeline();
+	void ColourSensor();
+	bool DiffCurrentState(int stateIndex, float timeStamp);
 
 	void Led(int32 led, bool on);
 	void SetLed(uint8 R, uint8 G, uint8 B);
@@ -90,9 +105,10 @@ public:
 	FString address = TEXT("127.0.0.1");
 
 private:
-	FSensorState state;
-	TArray<FSensorState*> stateHistory;
+	FSensorState* state;
+	FSensorHistory* history;
 	TArray<TArray<FSensorState*>*> shRecords;
+	TArray<FSensorHistory*> histories;
 	TArray<USpotLightComponent*> Leds;
 	ATriggerBase* tb;
 	ISocketSubsystem* sockSubSystem;

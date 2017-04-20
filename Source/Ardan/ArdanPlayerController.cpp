@@ -11,36 +11,7 @@
 #include "UObjectGlobals.h"
 #include "Runtime/Engine/Classes/Camera/CameraActor.h"
 #include "ArdanCharacter.h"
-
-template <typename ObjClass>
-static FORCEINLINE ObjClass* LoadObjFromPath(const FName& Path)
-{
-	if (Path == NAME_None) return NULL;
-	//~
-
-	return Cast<ObjClass>(StaticLoadObject(ObjClass::StaticClass(), NULL, *Path.ToString()));
-}
-
-static FORCEINLINE UMaterialInterface* LoadMatFromPath(const FName& Path)
-{
-	if (Path == NAME_None) return NULL;
-	//~
-
-	return LoadObjFromPath<UMaterialInterface>(Path);
-}
-
-template<class T> T* SpawnActor(UWorld* world,
-  FVector const& Location, FRotator const& Rotation,
-  AActor* Owner=NULL, APawn* Instigator=NULL,
-  bool bNoCollisionFail=false) {
-	FActorSpawnParameters SpawnInfo;
-	SpawnInfo.Owner = Owner;
-	SpawnInfo.Instigator = Instigator;
-	SpawnInfo.bDeferConstruction = false;
-	SpawnInfo.bNoFail 		= bNoCollisionFail;
-	// SpawnInfo.bNoCollisionFail = bNoCollisionFail;
-  return (T*)(world->SpawnActor<T>(&Location, &Rotation, SpawnInfo));
-}
+#include "ArdanUtilities.h"
 
 AArdanPlayerController::AArdanPlayerController() {
 	bShowMouseCursor = true;
@@ -374,11 +345,11 @@ void AArdanPlayerController::diff(FObjectInfo* info) {
 	float dist = anc->actor->GetDistanceTo(info->actor);
 	UE_LOG(LogNet, Log, TEXT("dIST: %f"), dist);
 	if (dist > 50.0) {
-		UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/TimeSphere.TimeSphere'"));
+		UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Game/Materials/TimeSphere.TimeSphere'"));
 		((USkeletalMeshComponent*) info->actor->GetComponentByClass(USkeletalMeshComponent::StaticClass()))->SetMaterial(0, mat);
 	}
 	else {
-		UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Mannequin/Character/Materials/M_UE4Man_Body.M_UE4Man_Body'"));
+		UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Game/Mannequin/Character/Materials/M_UE4Man_Body.M_UE4Man_Body'"));
 		((USkeletalMeshComponent*)info->actor->GetComponentByClass(USkeletalMeshComponent::StaticClass()))->SetMaterial(0, mat);
 	}
 }
@@ -410,7 +381,7 @@ void AArdanPlayerController::replayPressed() {
 
 void AArdanPlayerController::ghostActor(AActor *mesh, float amount) {
 	
-	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/Transparency_Material.Transparency_Material'"));
+	UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Game/Materials/Transparency_Material.Transparency_Material'"));
 	UMaterialInstanceDynamic* matInst = UMaterialInstanceDynamic::Create(mat, this); //BaseMat must have material parameter called "Color"
 	matInst->SetScalarParameterValue(FName("Transparency_Amount"), amount);
 	((UMeshComponent*) mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, matInst);
@@ -418,7 +389,7 @@ void AArdanPlayerController::ghostActor(AActor *mesh, float amount) {
 }
 
 void AArdanPlayerController::colourActor(AActor *mesh) {
-	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial'"));
+	UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial'"));
 	//mesh->GetStaticMeshComponent()->SetMaterial(0, mat);
 	((UMeshComponent*)mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, mat);
 }

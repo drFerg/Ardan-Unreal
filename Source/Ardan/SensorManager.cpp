@@ -53,5 +53,39 @@ void SensorManager::SnapshotState(float timeStamp) {
 void SensorManager::RewindState(float timeStamp) {
 	for (ASensor* sensor : sensors) {
 		sensor->RewindState(timeStamp);
+		sensor->ReflectState();
 	}
+}
+
+void SensorManager::ReplayState(float timeStamp) {
+	for (ASensor* sensor : sensors) {
+		sensor->ReplayState(timeStamp);
+		sensor->ReflectState();
+	}
+}
+
+void SensorManager::NewTimeline() {
+	for (ASensor* sensor : sensors) {
+		sensor->ResetTimeline();
+		sensor->NewTimeline();
+		sensor->ReflectState();
+	}
+}
+
+void SensorManager::ResetTimeline() {
+	for (ASensor* sensor : sensors) {
+		sensor->ResetTimeline();
+		sensor->ReflectState();
+	}
+}
+
+bool SensorManager::DiffState(int index, float timeStamp) {
+	bool allChanged = false;
+	bool changed = false;
+	for (ASensor* sensor : sensors) {
+		changed = sensor->DiffCurrentState(index, timeStamp);
+		if (changed) sensor->ColourSensor(1);
+		else sensor->ColourSensor(0);
+	}
+	return changed;
 }

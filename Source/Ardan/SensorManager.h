@@ -21,6 +21,14 @@ public:
 
 	void RewindState(float timeStamp);
 
+	void ReplayState(float timeStamp);
+
+	void NewTimeline();
+
+	void ResetTimeline();
+
+	bool DiffState(int index, float timeStamp);
+
 private:
 	UWorld* world;
 	TArray<ASensor*> sensors;
