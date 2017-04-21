@@ -57,6 +57,10 @@ public:
 
 	void ReplayState(float timeStamp);
 
+	void ChangeTimeline(int index);
+
+	FSensorState * GetStatefromTimeline(int index, float timeStamp);
+
 	bool StateIsEqual(FSensorState* a, FSensorState* b);
 
 	void ReflectState();
@@ -64,7 +68,7 @@ public:
 	void ResetTimeline();
 
 	void NewTimeline();
-	void ColourSensor();
+	void ColourSensor(int type);
 	bool DiffCurrentState(int stateIndex, float timeStamp);
 
 	void Led(int32 led, bool on);
@@ -105,10 +109,11 @@ public:
 	FString address = TEXT("127.0.0.1");
 
 private:
+	UStaticMeshComponent* mesh;
 	FSensorState* state;
 	FSensorHistory* history;
-	TArray<TArray<FSensorState*>*> shRecords;
 	TArray<FSensorHistory*> histories;
+
 	TArray<USpotLightComponent*> Leds;
 	ATriggerBase* tb;
 	ISocketSubsystem* sockSubSystem;

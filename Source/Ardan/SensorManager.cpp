@@ -57,7 +57,7 @@ void SensorManager::RewindState(float timeStamp) {
 	}
 }
 
-void SensorManager::ReplayState(float timeStamp) {
+void SensorManager::FastForwardState(float timeStamp) {
 	for (ASensor* sensor : sensors) {
 		sensor->ReplayState(timeStamp);
 		sensor->ReflectState();
@@ -65,6 +65,7 @@ void SensorManager::ReplayState(float timeStamp) {
 }
 
 void SensorManager::NewTimeline() {
+	bHasHistory = true;
 	for (ASensor* sensor : sensors) {
 		sensor->ResetTimeline();
 		sensor->NewTimeline();
@@ -79,7 +80,16 @@ void SensorManager::ResetTimeline() {
 	}
 }
 
+
+void SensorManager::ChangeTimeline(int index) {
+	for (ASensor* sensor : sensors) {
+		sensor->ChangeTimeline(index);
+		sensor->ReflectState();
+	}
+}
+
 bool SensorManager::DiffState(int index, float timeStamp) {
+	if (!bHasHistory) return false;
 	bool allChanged = false;
 	bool changed = false;
 	for (ASensor* sensor : sensors) {

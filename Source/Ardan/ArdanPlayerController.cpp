@@ -377,6 +377,7 @@ void AArdanPlayerController::replayPressed() {
 	currentPawnHistory = new FHistory();
 	copyPawnActors(currentPawnHistory, oldHistory);
 	int z = 0;
+	sensorManager->NewTimeline();
 }
 
 void AArdanPlayerController::ghostActor(AActor *mesh, float amount) {
@@ -419,6 +420,8 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		for (FHistory *history : pawnHistories) {
 			rewindPawnActors(history);
 		}
+
+		sensorManager->RewindState(curTime);
 		return;
 	}
 	else {
@@ -439,7 +442,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	}
   
 	diff(*(currentPawnHistory->histMap.Find(GetPawn()->GetName())));
-	
+	sensorManager->DiffState(0, curTime);
 
 	// /* Working out FPS */
 	elapsed += DeltaTime;

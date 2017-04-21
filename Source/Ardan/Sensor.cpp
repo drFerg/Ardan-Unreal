@@ -89,29 +89,30 @@ ASensor::ASensor() {
 //	MyItemBlueprint = (UClass*)bp->GeneratedClass;
 //	TSubclassOf<class UObject> MyItemBlueprint;
 //	MyItemBlueprint = Cast<UClass>(blueprint->GeneratedClass);
-
+	//UStaticMeshComponent* SphereVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
+	//RootComponent = SphereVisual;
 	/* Find the blueprint of the 3D model */
-	UBlueprint* blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/SensorNode.SensorNode'")));
-	TSubclassOf<class UObject> MyItemBlueprint = (UClass*)(blueprint->GeneratedClass);
-	if (MyItemBlueprint != NULL) {
-		UE_LOG(LogNet, Log, TEXT("BName: %s %s"), *(MyItemBlueprint->GetClass()->GetName()), *(this->GetActorLocation().ToString()));
-	} else {
-		UE_LOG(LogNet, Log, TEXT("I got nothing"));
-	}
+	//UBlueprint* blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/SensorNode.SensorNode'")));
+	//TSubclassOf<class UObject> MyItemBlueprint = (UClass*)(blueprint->GeneratedClass);
+	//if (MyItemBlueprint != NULL) {
+	//	UE_LOG(LogNet, Log, TEXT("BName: %s %s"), *(MyItemBlueprint->GetClass()->GetName()), *(this->GetActorLocation().ToString()));
+	//} else {
+	//	UE_LOG(LogNet, Log, TEXT("I got nothing"));
+	//}
 
 	/* Spawn the 3D model for the sensor in the virtual world */
-	SensorActor = ArdanUtilities::SpawnBP<AActor>(GetWorld(), MyItemBlueprint, this->GetActorLocation(), this->GetActorRotation());
-	if(SensorActor) {
-		UE_LOG(LogNet, Log, TEXT("SeName: %s"), *(SensorActor->GetName()));
-		this->Children.Add(SensorActor);
-		SensorActor->SetOwner(this);
-		UE_LOG(LogNet, Log, TEXT("New Sensor: %s"), *(SensorActor->GetName()))
+	//SensorActor = ArdanUtilities::SpawnBP<AActor>(GetWorld(), MyItemBlueprint, this->GetActorLocation(), this->GetActorRotation());
+	mesh = (UStaticMeshComponent*) this->GetComponentByClass(UStaticMeshComponent::StaticClass());
+	if(mesh) {
+		UE_LOG(LogNet, Log, TEXT("SeName: %s"), *(mesh->GetName()));
 		/* Retrieve all the LEDS and turn them OFF */
-		SensorActor->GetComponents(Leds);
-		for (USpotLightComponent *l: Leds) {
-			if (l == NULL) continue;
-			UE_LOG(LogNet, Log, TEXT("%s owned by %s"), *(l->GetName()),
-					*(l->GetOwner()->GetName()));
+		TArray<USceneComponent*> components;
+
+		mesh->GetChildrenComponents(true, components);
+		for (USceneComponent *c: Leds) {
+			USpotLightComponent *l = (USpotLightComponent*)c;
+			Leds.Add(l);
+			UE_LOG(LogNet, Log, TEXT("%s owned by %s"), *(l->GetName()), *(l->GetOwner()->GetName()));
 			l->SetIntensity(LEDOFF);
 		}
 	}
@@ -133,13 +134,13 @@ ASensor::ASensor() {
 // Called when the game starts or when spawned
 void ASensor::BeginPlay() {
 	Super::BeginPlay();
-
+	ColourSensor(0);
 	/* Set up destination address:port to send Cooja messages to */
 	FIPv4Address::Parse(address, ip);
 	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	addr->SetIp(ip.Value);
 	addr->SetPort(port);
-
+	//TODO: FIX THIS
 	TArray<AActor*> attachedActors;
 	if(SensorActor) {
 		SensorActor->GetAttachedActors(attachedActors);
@@ -272,14 +273,31 @@ void ASensor::ReplayState(float timeStamp) {
 	state = s;
 }
 
+void ASensor::ChangeTimeline(int index) {
+	histories.Push(history);
+	history = histories[index];
+	ResetTimeline();
+	ReflectState();
+}
+
+FSensorState* ASensor::GetStatefromTimeline(int index, float timeStamp) {
+	int i = 0;
+	FSensorHistory* h = histories[index];
+	FSensorState* s = h->timeline[h->index];
+	while (i < h->timeline.Num() && s->timeStamp < timeStamp) {
+		s = h->timeline[++h->index];
+	}
+	return s;
+}
+
 bool ASensor::StateIsEqual(FSensorState* a, FSensorState* b) {
 	return (a->R == b->R && a->G == b->G && a->B == a->B);
 }
 
 bool ASensor::DiffCurrentState(int stateIndex, float timeStamp) {
-	//StateisEqual(state, shrecord)
-	return false;
+	return StateIsEqual(state, GetStatefromTimeline(stateIndex, timeStamp));
 }
+
 /*Reflects the stored state on the virtual object*/
 void ASensor::ReflectState() {
 	SetLed(state->R, state->G, state->B);
@@ -292,18 +310,19 @@ void ASensor::ResetTimeline() {
 }
 
 void ASensor::NewTimeline() {
-	histories.Add(history);
+	histories.Push(history);
 	history = new FSensorHistory();
 }
 
 void ASensor::ColourSensor(int type) {
-	UMaterialInterface *mat;
-	if (type = 0) {
-		mat = ArdanUtilities::LoadMatFromPath(TEXT("MaterialInstanceConstant'/Game/Materials/SensorStatus.SensorStatus'"));
+	UMaterialInstance *mat = NULL;
+	if (type == 0) {
+		mat = ArdanUtilities::LoadObjFromPath<UMaterialInstance>(TEXT("MaterialInstanceConstant'/Game/Materials/SensorStatus_Normal.SensorStatus_Normal'"));
 	}
 	else if (type == 1) {
-		mat = ArdanUtilities::LoadMatFromPath(TEXT("MaterialInstanceConstant'/Game/Materials/SensorStatus.SensorStatus'"));
+		mat = ArdanUtilities::LoadObjFromPath<UMaterialInstance>(TEXT("MaterialInstanceConstant'/Game/Materials/SensorStatus_Warning.SensorStatus_Warning'"));
 	}
-	
-	((UStaticMeshComponent*)SensorActor->GetComponentByClass(UStaticMeshComponent::StaticClass()))->SetMaterial(0, mat);
+	UE_LOG(LogNet, Log, TEXT("SET MAT"));
+
+	mesh->SetMaterial(0, mat);
 }

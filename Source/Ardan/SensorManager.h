@@ -21,11 +21,13 @@ public:
 
 	void RewindState(float timeStamp);
 
-	void ReplayState(float timeStamp);
+	void FastForwardState(float timeStamp);
 
 	void NewTimeline();
 
 	void ResetTimeline();
+
+	void ChangeTimeline(int index);
 
 	bool DiffState(int index, float timeStamp);
 
@@ -33,7 +35,7 @@ private:
 	UWorld* world;
 	TArray<ASensor*> sensors;
 	TMap<int, ASensor*> sensorTable;
-
+	bool bHasHistory = false;
 	FColor colours[12] = { FColor(255, 0, 0),
 		FColor(0, 255, 0),
 		FColor(0, 0, 255),
