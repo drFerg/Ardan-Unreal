@@ -43,3 +43,60 @@ void SensorManager::ReceivePacket(uint8* pkt) {
 		}
 	}
 }
+
+void SensorManager::SnapshotState(float timeStamp) {
+	for (ASensor* sensor : sensors) {
+		sensor->SnapshotState(timeStamp);
+	}
+}
+
+void SensorManager::RewindState(float timeStamp) {
+	for (ASensor* sensor : sensors) {
+		sensor->RewindState(timeStamp);
+		sensor->ReflectState();
+	}
+}
+
+void SensorManager::FastForwardState(float timeStamp) {
+	for (ASensor* sensor : sensors) {
+		sensor->ReplayState(timeStamp);
+		sensor->ReflectState();
+	}
+}
+
+void SensorManager::NewTimeline() {
+	bHasHistory = true;
+	for (ASensor* sensor : sensors) {
+		sensor->ResetTimeline();
+		sensor->NewTimeline();
+		sensor->SnapshotState(0.0);
+		sensor->ReflectState();
+	}
+}
+
+void SensorManager::ResetTimeline() {
+	for (ASensor* sensor : sensors) {
+		sensor->ResetTimeline();
+		sensor->ReflectState();
+	}
+}
+
+
+void SensorManager::ChangeTimeline(int index) {
+	for (ASensor* sensor : sensors) {
+		sensor->ChangeTimeline(index);
+		sensor->ReflectState();
+	}
+}
+
+bool SensorManager::DiffState(int index, float timeStamp) {
+	if (!bHasHistory) return false;
+	bool allChanged = false;
+	bool equal = false;
+	for (ASensor* sensor : sensors) {
+		equal = sensor->DiffCurrentState(index, timeStamp);
+		if (!equal) sensor->ColourSensor(1);
+		else sensor->ColourSensor(0);
+	}
+	return equal;
+}

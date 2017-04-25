@@ -102,6 +102,7 @@ protected:
 	void copyActors(FHistory* dstHistory, FHistory *srcHistory);
 	void copyPawnActors(FHistory * dstHistory, FHistory * srcHistory);
 	void diff(FObjectInfo * info);
+	void NewTimeline();
 	void rewindMeshActors(FHistory *history, bool freeze);
 	void rewindPawnActors(FHistory *history);
 	void replayActors(FHistory *history);
@@ -130,6 +131,7 @@ protected:
 		float curTime = 0;
 		bool bReverse = false;
 		bool bReplay = false;
+		bool bRecording = false;
 		TArray<ASensor*> sensors;
 		TMap<int, ASensor*> sensorTable;
 		TSubclassOf<class UObject> sensorBlueprint;

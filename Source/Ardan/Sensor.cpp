@@ -17,28 +17,13 @@
 #include <flatbuffers/flatbuffers.h>
 #include "unrealpkts_generated.h"
 #include "DrawDebugHelpers.h"
+#include "ArdanUtilities.h"
 
 
 #define LEDON 4500
 #define LEDOFF 0
 
-template <typename VictoryObjType>
-VictoryObjType* SpawnBP(UWorld* TheWorld, UClass* TheBP, const FVector& Loc,
-		const FRotator& Rot, const bool bNoCollisionFail = true,
-		AActor* Owner = NULL,	APawn* Instigator = NULL) {
 
-		if(!TheWorld) return NULL;
-		if(!TheBP) return NULL;
-		//~~
-
-		FActorSpawnParameters SpawnInfo;
-		// SpawnInfo.bNoCollisionFail 		= bNoCollisionFail;
-		SpawnInfo.Owner 				= Owner;
-		SpawnInfo.Instigator			= Instigator;
-		SpawnInfo.bDeferConstruction 	= false;
-
-		return TheWorld->SpawnActor<VictoryObjType>(TheBP, Loc ,Rot, SpawnInfo);
-	}
 
 
 
@@ -51,7 +36,9 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 														 class AActor* otherActor) {
 	/* Start motion tracking the overlapping otherActor */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
-	//UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	SetLed(1, 1, 1);
+	SnapshotState(GetWorld()->TimeSeconds);
 	if (!active) return;
 	fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
@@ -72,7 +59,10 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 void ASensor::OnEndOverlap(class AActor* OverlappedActor,
 													 class AActor* otherActor) {
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
-	//UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	SetLed(0,0,0);
+	SnapshotState(GetWorld()->TimeSeconds);
+
 	if (!active) return;
 	fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
@@ -90,8 +80,7 @@ void ASensor::OnEndOverlap(class AActor* OverlappedActor,
 	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
 
-ASensor::ASensor()
-{
+ASensor::ASensor() {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	/* Check if instantiation is real or just for placement guidlines */
@@ -105,35 +94,20 @@ ASensor::ASensor()
 //	MyItemBlueprint = (UClass*)bp->GeneratedClass;
 //	TSubclassOf<class UObject> MyItemBlueprint;
 //	MyItemBlueprint = Cast<UClass>(blueprint->GeneratedClass);
-
+	//UStaticMeshComponent* SphereVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
+	//RootComponent = SphereVisual;
 	/* Find the blueprint of the 3D model */
-	UBlueprint* blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/SensorNode.SensorNode'")));
-	TSubclassOf<class UObject> MyItemBlueprint = (UClass*)(blueprint->GeneratedClass);
-	if (MyItemBlueprint != NULL) {
-		UE_LOG(LogNet, Log, TEXT("BName: %s %s"), *(MyItemBlueprint->GetClass()->GetName()), *(this->GetActorLocation().ToString()));
-	} else {
-		UE_LOG(LogNet, Log, TEXT("I got nothing"));
-	}
+	//UBlueprint* blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/SensorNode.SensorNode'")));
+	//TSubclassOf<class UObject> MyItemBlueprint = (UClass*)(blueprint->GeneratedClass);
+	//if (MyItemBlueprint != NULL) {
+	//	UE_LOG(LogNet, Log, TEXT("BName: %s %s"), *(MyItemBlueprint->GetClass()->GetName()), *(this->GetActorLocation().ToString()));
+	//} else {
+	//	UE_LOG(LogNet, Log, TEXT("I got nothing"));
+	//}
 
 	/* Spawn the 3D model for the sensor in the virtual world */
-	SensorActor = SpawnBP<AActor>(GetWorld(), MyItemBlueprint, this->GetActorLocation(), this->GetActorRotation());
-	if(SensorActor) {
-		UE_LOG(LogNet, Log, TEXT("SeName: %s"), *(SensorActor->GetName()));
-		this->Children.Add(SensorActor);
-		SensorActor->SetOwner(this);
-		UE_LOG(LogNet, Log, TEXT("New Sensor: %s"), *(SensorActor->GetName()))
-		/* Retrieve all the LEDS and turn them OFF */
-		SensorActor->GetComponents(Leds);
-		for (USpotLightComponent *l: Leds) {
-			if (l == NULL) continue;
-			UE_LOG(LogNet, Log, TEXT("%s owned by %s"), *(l->GetName()),
-					*(l->GetOwner()->GetName()));
-			l->SetIntensity(LEDOFF);
-		}
-	}
-	else {
-		UE_LOG(LogNet, Log, TEXT("SeName:Not spawned!"));
-	}
+	//SensorActor = ArdanUtilities::SpawnBP<AActor>(GetWorld(), MyItemBlueprint, this->GetActorLocation(), this->GetActorRotation());
+	
 //	AArdanGameMode* gm = ((AArdanGameMode*)GetWorld()->GetAuthGameMode());
 //	if (gm)	ID = ((AArdanGameMode*)GetWorld()->GetAuthGameMode())->getNewSensorID();
 
@@ -147,54 +121,63 @@ ASensor::ASensor()
 
 
 // Called when the game starts or when spawned
-void ASensor::BeginPlay()
-{
+void ASensor::BeginPlay() {
 	Super::BeginPlay();
-
+	
 	/* Set up destination address:port to send Cooja messages to */
 	FIPv4Address::Parse(address, ip);
 	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	addr->SetIp(ip.Value);
 	addr->SetPort(port);
-
-	TArray<AActor*> attachedActors;
-	if(SensorActor) {
-		SensorActor->GetAttachedActors(attachedActors);
-		if (PIRSensor) {
-			PIRSensor->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
-			PIRSensor->OnActorEndOverlap.AddDynamic(this, &ASensor::OnEndOverlap);
-		}
+	//TODO: FIX THIS
+	mesh = (UStaticMeshComponent*) this->GetComponentByClass(UStaticMeshComponent::StaticClass());
+	if (mesh) {
+		UE_LOG(LogNet, Log, TEXT("SensorName: %s"), *(mesh->GetName()));
+		ColourSensor(0);
 		/* Retrieve all the LEDS and turn them OFF */
-		Leds.Empty();
-		UE_LOG(LogNet, Log, TEXT("Sensor: %s"), *(SensorActor->GetName()))
-		SensorActor->GetComponents(Leds);
-		for (USpotLightComponent *l: Leds) {
-			if (l == NULL) continue;
-			//UE_LOG(LogNet, Log, TEXT("%s owned by %s"), *(l->GetName()),
-				//	*(l->GetOwner()->GetName()));
+		TArray<USceneComponent*> components;
+		mesh->GetChildrenComponents(true, components);
+		UE_LOG(LogNet, Log, TEXT("SensorName: %d"), components.Num());
+		for (USceneComponent *c : components) {
+			USpotLightComponent *l = (USpotLightComponent*)c;
+			Leds.Add(l);
+			UE_LOG(LogNet, Log, TEXT("%s owned by %s"), *(l->GetName()), *(l->GetOwner()->GetName()));
 			l->SetIntensity(LEDOFF);
 		}
 	}
 	else {
-		UE_LOG(LogNet, Log, TEXT("Node: Not spawned"));
+		UE_LOG(LogNet, Log, TEXT("SensorName:No mesh spawned!"));
 	}
-	prevLocation = SensorActor->GetActorLocation();
+
+	if (PIRSensor) {
+		UE_LOG(LogNet, Log, TEXT("SensorName:Have PIR sensor"));
+		PIRSensor->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
+		PIRSensor->OnActorEndOverlap.AddDynamic(this, &ASensor::OnEndOverlap);
+	}
+
+	history = new FSensorHistory();
+	state = new FSensorState();
+	state->R = 0;
+	state->G = 0;
+	state->B = 0;
+	SnapshotState(0.0);
+
+	prevLocation = this->GetActorLocation();
 	sendLocationUpdate();
 	UE_LOG(LogNet, Log, TEXT("%d %s"), ID,
-				*(SensorActor->GetActorLocation().ToString()));
+				*(this->GetActorLocation().ToString()));
 	sendLocationUpdate();
 }
 
 // Called every frame
-void ASensor::Tick(float DeltaTime)
-{
+void ASensor::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 	/* Check if actors located within PIR detection range have moved,
 	 * checking their current location vs previous */
 
-	if (SensorActor && prevLocation.Equals(SensorActor->GetActorLocation(), 10) == false) {
+	if (prevLocation.Equals(this->GetActorLocation(), 10) == false) {
 		sendLocationUpdate();
-		prevLocation = SensorActor->GetActorLocation();
+		prevLocation = this->GetActorLocation();
 	}
 	activeTimer += DeltaTime;
 	if (activeTimer > PIRRepeatTime) {
@@ -203,17 +186,18 @@ void ASensor::Tick(float DeltaTime)
 	}
 }
 
-void ASensor::Led(int32 led, bool on)
-{
+void ASensor::Led(int32 led, bool on) {
 	if (led > 3 && led < 0) return;
 //UE_LOG(LogNet, Log, TEXT("Node: %s"), *(SensorActor->GetName()))
 	//UE_LOG(LogNet, Log, TEXT("Led: %s (%i)"), *(Leds[led]->GetName()), led);
 	Leds[led]->SetIntensity(on ? LEDON : LEDOFF);
 }
 
-void ASensor::SetLed(uint8 R, uint8 G, uint8 B)
-{
+void ASensor::SetLed(uint8 R, uint8 G, uint8 B) {
 	//UE_LOG(LogNet, Log, TEXT("Node: %s"), *(actor->GetName()))
+	state->R = R;
+	state->G = G;
+	state->B = B;
 	Leds[0]->SetIntensity(R ? LEDON : LEDOFF);
 	Leds[1]->SetIntensity(G ? LEDON : LEDOFF);
 	Leds[2]->SetIntensity(B ? LEDON : LEDOFF);
@@ -223,15 +207,15 @@ void ASensor::SetLed(uint8 R, uint8 G, uint8 B)
 }
 
 void ASensor::SetSelected() {
-	DrawDebugCircle(GetWorld(), SensorActor->GetActorLocation(), 150.0, 360, FColor(0, 255, 0), false, 0.3, 0, 5, FVector(0.f,1.f,0.f), FVector(0.f,0.f,1.f), false);
+	DrawDebugCircle(GetWorld(), this->GetActorLocation(), 150.0, 360, FColor(0, 255, 0), false, 0.3, 0, 5, FVector(0.f,1.f,0.f), FVector(0.f,0.f,1.f), false);
 }
 
 FVector ASensor::GetSensorLocation() {
-	return SensorActor->GetActorLocation();
+	return this->GetActorLocation();
 }
 
 void ASensor::sendLocationUpdate() {
-	FVector locVec = SensorActor->GetActorLocation();
+	FVector locVec = this->GetActorLocation();
 
 	fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
@@ -247,28 +231,106 @@ void ASensor::sendLocationUpdate() {
 									 sent, *addr);
 	//UE_LOG(LogNet, Log, TEXT("Loc update %d (%i-%i)"), ID, successful, sent);
 }
-//		for (AActor *a: attachedActors) {
-//			UE_LOG(LogNet, Log, TEXT("%s:%s"), *(a->GetName()), *(a->GetClass()->GetName()));
-//			/* Find a trigger volume aka PIR Sensor */
-//			if (a->GetClass() == AStaticMeshActor::StaticClass()){
-//				UE_LOG(LogNet, Log, TEXT("Found a Cone Sensor: %s"), *(a->GetName()));
-//				tb = (ATriggerBase*) a;
-//				tb->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
-//				tb->OnActorEndOverlap.AddDynamic(this, &ASensor::OnEndOverlap);
-//			}
-//			if (a->GetClass()->IsChildOf(ATriggerBase::StaticClass())){
-//				UE_LOG(LogNet, Log, TEXT("Found a PIR Sensor: %s"), *(a->GetName()));
-//				tb = (ATriggerBase*) a;
-//				tb->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
-//				tb->OnActorEndOverlap.AddDynamic(this, &ASensor::OnEndOverlap);
-//			}
-
-		//}
-
 
 void ASensor::ReceivePacket(uint8* pkt) {
 	if (pkt[0] == LED_PKT) {
 		//UE_LOG(LogNet, Log, TEXT("LEDPKT"));
-		this->SetLed(pkt[2], pkt[3], pkt[4]);
+		SetLed(pkt[2], pkt[3], pkt[4]);
 	}
+}
+
+void ASensor::SnapshotState(float timeStamp) {
+	//if (!bstateBeenModified) return;
+	FSensorState* s = new FSensorState();
+	*s = *state;
+	s->timeStamp = timeStamp;
+	history->timeline.Add(s);
+	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d %f"), state->R, state->G, state->B, s->timeStamp);
+	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), s->R, s->G, s->B);
+}
+
+void ASensor::RewindState(float requestTime) {
+	int i = history->timeline.Num() - 1;
+	FSensorState* s = history->timeline[i];
+	while (i > 0 && s->timeStamp > requestTime) {
+		s = history->timeline[--i];
+	}
+	state = s;
+}
+
+
+void ASensor::ReplayState(float timeStamp) {
+	//int i = 0;
+	//FSensorState* s = history->timeline[i];
+	//while (i < history->timeline.Num() && s->timeStamp < timeStamp) {
+	//	s = history->timeline[++i];
+	//}
+	//state = s;
+	state = GetStatefromTimeline(history, timeStamp);
+}
+
+void ASensor::ChangeTimeline(int index) {
+	histories.Push(history);
+	history = histories[index];
+	ResetTimeline();
+	ReflectState();
+}
+
+FSensorState* ASensor::GetStatefromTimeline(FSensorHistory* h, float timeStamp) {
+	FSensorState* s = NULL;
+	UE_LOG(LogNet, Log, TEXT("GSFT: (%d)(%d)"), h->index, h->timeline.Num());
+	while (h->index < h->timeline.Num() && h->timeline[h->index]->timeStamp <= timeStamp) {
+
+		s = h->timeline[h->index];
+		UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), s->R, s->G, s->B, s->timeStamp);
+
+		h->currentState = s;
+		h->index++;
+	}
+	return s ? s : h->currentState;
+}
+
+FSensorState* ASensor::GetStatefromTimeline(int index, float timeStamp) {
+	return GetStatefromTimeline(histories[index], timeStamp);
+}
+
+bool ASensor::StateIsEqual(FSensorState* a, FSensorState* b) {
+	return (a->R == b->R && a->G == b->G && a->B == a->B);
+}
+
+bool ASensor::DiffCurrentState(int stateIndex, float timeStamp) {
+	return StateIsEqual(state, GetStatefromTimeline(stateIndex, timeStamp));
+}
+
+/*Reflects the stored state on the virtual object*/
+void ASensor::ReflectState() {
+	SetLed(state->R, state->G, state->B);
+	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), state->R, state->G, state->B);
+}
+
+void ASensor::ResetTimeline() {
+	/* State has already been stored in history */
+	delete state;
+	history->index = 0;
+	state = history->timeline[0];
+	history->currentState = state;
+}
+
+void ASensor::NewTimeline() {
+	histories.Push(history);
+	history = new FSensorHistory();
+	bstateBeenModified = true;
+}
+
+void ASensor::ColourSensor(int type) {
+	UMaterialInstance *mat = NULL;
+	if (type == 0) {
+		mat = ArdanUtilities::LoadObjFromPath<UMaterialInstance>(TEXT("MaterialInstanceConstant'/Game/Materials/SensorStatus_Normal.SensorStatus_Normal'"));
+	}
+	else if (type == 1) {
+		mat = ArdanUtilities::LoadObjFromPath<UMaterialInstance>(TEXT("MaterialInstanceConstant'/Game/Materials/SensorStatus_Warning.SensorStatus_Warning'"));
+	}
+	UE_LOG(LogNet, Log, TEXT("SET MAT"));
+
+	mesh->SetMaterial(0, mat);
 }

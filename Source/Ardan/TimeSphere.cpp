@@ -1,23 +1,9 @@
 
 #include "Ardan.h"
 #include "TimeSphere.h"
+#include "ArdanUtilities.h"
 
-template <typename ObjClass>
-static FORCEINLINE ObjClass* LoadObjFromPath(const FName& Path)
-{
-	if (Path == NAME_None) return NULL;
-	//~
 
-	return Cast<ObjClass>(StaticLoadObject(ObjClass::StaticClass(), NULL, *Path.ToString()));
-}
-
-static FORCEINLINE UMaterialInterface* LoadMatFromPath(const FName& Path)
-{
-	if (Path == NAME_None) return NULL;
-	//~
-
-	return LoadObjFromPath<UMaterialInterface>(Path);
-}
 // Sets default values
 ATimeSphere::ATimeSphere(const FObjectInitializer &ObjectInitializer) :Super(ObjectInitializer)
 {
@@ -29,7 +15,7 @@ ATimeSphere::ATimeSphere(const FObjectInitializer &ObjectInitializer) :Super(Obj
     UStaticMeshComponent* SphereVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
     RootComponent = SphereVisual;
 		
-		UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/TimeSphere.TimeSphere'"));
+		UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Game/Materials/TimeSphere.TimeSphere'"));
 		SphereVisual->SetMaterial(0, mat);
 
     // Our root component will be a sphere that reacts to physics

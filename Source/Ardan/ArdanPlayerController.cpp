@@ -11,36 +11,7 @@
 #include "UObjectGlobals.h"
 #include "Runtime/Engine/Classes/Camera/CameraActor.h"
 #include "ArdanCharacter.h"
-
-template <typename ObjClass>
-static FORCEINLINE ObjClass* LoadObjFromPath(const FName& Path)
-{
-	if (Path == NAME_None) return NULL;
-	//~
-
-	return Cast<ObjClass>(StaticLoadObject(ObjClass::StaticClass(), NULL, *Path.ToString()));
-}
-
-static FORCEINLINE UMaterialInterface* LoadMatFromPath(const FName& Path)
-{
-	if (Path == NAME_None) return NULL;
-	//~
-
-	return LoadObjFromPath<UMaterialInterface>(Path);
-}
-
-template<class T> T* SpawnActor(UWorld* world,
-  FVector const& Location, FRotator const& Rotation,
-  AActor* Owner=NULL, APawn* Instigator=NULL,
-  bool bNoCollisionFail=false) {
-	FActorSpawnParameters SpawnInfo;
-	SpawnInfo.Owner = Owner;
-	SpawnInfo.Instigator = Instigator;
-	SpawnInfo.bDeferConstruction = false;
-	SpawnInfo.bNoFail 		= bNoCollisionFail;
-	// SpawnInfo.bNoCollisionFail = bNoCollisionFail;
-  return (T*)(world->SpawnActor<T>(&Location, &Rotation, SpawnInfo));
-}
+#include "ArdanUtilities.h"
 
 AArdanPlayerController::AArdanPlayerController() {
 	bShowMouseCursor = true;
@@ -51,7 +22,7 @@ AArdanPlayerController::AArdanPlayerController() {
 
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
-	UBlueprint* blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/SensorNode.SensorNode'")));
+	UBlueprint* blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/Sensor/SensorMesh.SensorMesh'")));
 	sensorBlueprint = (UClass*)(blueprint->GeneratedClass);
 	if (sensorBlueprint != NULL) {
 		UE_LOG(LogNet, Log, TEXT("BName: %s"), *(sensorBlueprint->GetClass()->GetName()));
@@ -75,6 +46,7 @@ AArdanPlayerController::AArdanPlayerController() {
 
 void AArdanPlayerController::BeginPlay() {
   Super::BeginPlay();
+	bRecording = true;
   conns = FRunnableConnection::create(5000, &packetQ);
   if (conns) {UE_LOG(LogNet, Log, TEXT("Runnable Connection created"));}
   else { UE_LOG(LogNet, Log, TEXT("conns failed"));}
@@ -374,16 +346,17 @@ void AArdanPlayerController::diff(FObjectInfo* info) {
 	float dist = anc->actor->GetDistanceTo(info->actor);
 	UE_LOG(LogNet, Log, TEXT("dIST: %f"), dist);
 	if (dist > 50.0) {
-		UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/TimeSphere.TimeSphere'"));
+		UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Game/Materials/TimeSphere.TimeSphere'"));
 		((USkeletalMeshComponent*) info->actor->GetComponentByClass(USkeletalMeshComponent::StaticClass()))->SetMaterial(0, mat);
 	}
 	else {
-		UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Mannequin/Character/Materials/M_UE4Man_Body.M_UE4Man_Body'"));
+		UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Game/Mannequin/Character/Materials/M_UE4Man_Body.M_UE4Man_Body'"));
 		((USkeletalMeshComponent*)info->actor->GetComponentByClass(USkeletalMeshComponent::StaticClass()))->SetMaterial(0, mat);
 	}
 }
 
-void AArdanPlayerController::replayPressed() {
+void AArdanPlayerController::NewTimeline() {
+	bRecording = true;
   bReplay = true;
   curTime = 0;
   replayTime = 0;
@@ -406,20 +379,39 @@ void AArdanPlayerController::replayPressed() {
 	currentPawnHistory = new FHistory();
 	copyPawnActors(currentPawnHistory, oldHistory);
 	int z = 0;
+	sensorManager->NewTimeline();
+}
+
+void AArdanPlayerController::replayPressed() {
+	bReplay = true;
+	bRecording = false;
+	curTime = 0;
+	replayTime = 0;
+
+	resetActors(currentHistory);
+	for (FHistory *history : histories) {
+		resetActors(history);
+	}
+
+	resetPawnActors(currentPawnHistory);
+	for (FHistory *history : pawnHistories) {
+		resetPawnActors(history);
+	}
+
+	int z = 0;
+	sensorManager->ResetTimeline();
 }
 
 void AArdanPlayerController::ghostActor(AActor *mesh, float amount) {
 	
-	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Game/Materials/Transparency_Material.Transparency_Material'"));
+	UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Game/Materials/Transparency_Material.Transparency_Material'"));
 	UMaterialInstanceDynamic* matInst = UMaterialInstanceDynamic::Create(mat, this); //BaseMat must have material parameter called "Color"
 	matInst->SetScalarParameterValue(FName("Transparency_Amount"), amount);
 	((UMeshComponent*) mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, matInst);
-	//mesh->GetStaticMeshComponent()->SetMaterial(0, matInst);
 }
 
 void AArdanPlayerController::colourActor(AActor *mesh) {
-	UMaterialInterface *mat = LoadMatFromPath(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial'"));
-	//mesh->GetStaticMeshComponent()->SetMaterial(0, mat);
+	UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial'"));
 	((UMeshComponent*)mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, mat);
 }
 
@@ -448,27 +440,35 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		for (FHistory *history : pawnHistories) {
 			rewindPawnActors(history);
 		}
+
+		sensorManager->RewindState(curTime);
 		return;
 	}
 	else {
 		curTime += DeltaTime;
-		recordActors(DeltaTime);
-		recordPawnActors(DeltaTime);
 		if (bReplay) {
 			replayTime += DeltaTime;
+			UE_LOG(LogNet, Log, TEXT("Replaying: %f"), replayTime);
+			if (!currentHistory->bfinished) replayActors(currentHistory);
 			for (FHistory *history : histories) {
 				if (!history->bfinished) replayActors(history);
 			}
+			if (!currentPawnHistory->bfinished) replayPawnActors(currentPawnHistory);
 			for (FHistory *history : pawnHistories) {
 				if (!history->bfinished) replayPawnActors(history);
 			}
 			/*recordActors(DeltaTime);
 			recordPawnActors(DeltaTime);*/
+			sensorManager->FastForwardState(replayTime);
+		}
+		if (bRecording) {
+			recordActors(DeltaTime);
+			recordPawnActors(DeltaTime);
 		}
 	}
   
 	diff(*(currentPawnHistory->histMap.Find(GetPawn()->GetName())));
-	
+	sensorManager->DiffState(0, curTime);
 
 	// /* Working out FPS */
 	elapsed += DeltaTime;
@@ -481,12 +481,9 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		elapsed = 0;
 		tickCount = 0;
 	}
-	if (tenth >= 0.1){
+	if (!(bReplay || bReverse) && tenth >= 0.1) {
 
 		tenth = 0;
-		// DrawDebugCircle(GetWorld(), sourceLoc, 5.0, 360, colours[0], false, 30, 0, 1, FVector(1.f,0.f,0.f), FVector(0.f,1.f,0.f), false);
-		// ATimeSphere *ts = NewObject<ATimeSphere>();
-		// ATimeSphere *ts = SpawnActor<ATimeSphere>(GetWorld(), Pawn->GetActorLocation(), Pawn->GetActorRotation(), NULL, NULL, false);
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.Owner = NULL;
 		SpawnInfo.Instigator = NULL;
@@ -501,11 +498,10 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
   			FColor(255,0,0), false, 30, 0, 4);
 		}
 		if (ts != NULL) {
-		// ts->init(sourceLoc);
-		timeSpheres.Push(ts);
+			timeSpheres.Push(ts);
+		} else UE_LOG(LogNet, Log, TEXT("NOOOOOOOOOOOOOOO"));
 	}
-	else UE_LOG(LogNet, Log, TEXT("NOOOOOOOOOOOOOOO"));
-	}
+
 	// keep updating the destination every tick while desired
 	if (bMoveToMouseCursor)
 	{
@@ -551,6 +547,8 @@ void AArdanPlayerController::SetupInputComponent()
   InputComponent->BindAction("Reverse", IE_Released, this, &AArdanPlayerController::reverseReleased);
 
   InputComponent->BindAction("ResetReplay", IE_Pressed, this, &AArdanPlayerController::replayPressed);
+	InputComponent->BindAction("NewTimeline", IE_Pressed, this, &AArdanPlayerController::NewTimeline);
+
 
 }
 
