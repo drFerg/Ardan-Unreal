@@ -46,6 +46,7 @@ AArdanPlayerController::AArdanPlayerController() {
 
 void AArdanPlayerController::BeginPlay() {
   Super::BeginPlay();
+	bRecording = true;
   conns = FRunnableConnection::create(5000, &packetQ);
   if (conns) {UE_LOG(LogNet, Log, TEXT("Runnable Connection created"));}
   else { UE_LOG(LogNet, Log, TEXT("conns failed"));}
@@ -354,7 +355,8 @@ void AArdanPlayerController::diff(FObjectInfo* info) {
 	}
 }
 
-void AArdanPlayerController::replayPressed() {
+void AArdanPlayerController::NewTimeline() {
+	bRecording = true;
   bReplay = true;
   curTime = 0;
   replayTime = 0;
@@ -380,18 +382,36 @@ void AArdanPlayerController::replayPressed() {
 	sensorManager->NewTimeline();
 }
 
+void AArdanPlayerController::replayPressed() {
+	bReplay = true;
+	bRecording = false;
+	curTime = 0;
+	replayTime = 0;
+
+	resetActors(currentHistory);
+	for (FHistory *history : histories) {
+		resetActors(history);
+	}
+
+	resetPawnActors(currentPawnHistory);
+	for (FHistory *history : pawnHistories) {
+		resetPawnActors(history);
+	}
+
+	int z = 0;
+	sensorManager->ResetTimeline();
+}
+
 void AArdanPlayerController::ghostActor(AActor *mesh, float amount) {
 	
 	UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Game/Materials/Transparency_Material.Transparency_Material'"));
 	UMaterialInstanceDynamic* matInst = UMaterialInstanceDynamic::Create(mat, this); //BaseMat must have material parameter called "Color"
 	matInst->SetScalarParameterValue(FName("Transparency_Amount"), amount);
 	((UMeshComponent*) mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, matInst);
-	//mesh->GetStaticMeshComponent()->SetMaterial(0, matInst);
 }
 
 void AArdanPlayerController::colourActor(AActor *mesh) {
 	UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial'"));
-	//mesh->GetStaticMeshComponent()->SetMaterial(0, mat);
 	((UMeshComponent*)mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, mat);
 }
 
@@ -426,18 +446,23 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	}
 	else {
 		curTime += DeltaTime;
-		recordActors(DeltaTime);
-		recordPawnActors(DeltaTime);
 		if (bReplay) {
 			replayTime += DeltaTime;
+			UE_LOG(LogNet, Log, TEXT("Replaying: %f"), replayTime);
+			if (!currentHistory->bfinished) replayActors(currentHistory);
 			for (FHistory *history : histories) {
 				if (!history->bfinished) replayActors(history);
 			}
+			if (!currentPawnHistory->bfinished) replayPawnActors(currentPawnHistory);
 			for (FHistory *history : pawnHistories) {
 				if (!history->bfinished) replayPawnActors(history);
 			}
 			/*recordActors(DeltaTime);
 			recordPawnActors(DeltaTime);*/
+		}
+		if (bRecording) {
+			recordActors(DeltaTime);
+			recordPawnActors(DeltaTime);
 		}
 	}
   
@@ -455,12 +480,9 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		elapsed = 0;
 		tickCount = 0;
 	}
-	if (tenth >= 0.1){
+	if (!(bReplay || bReverse) && tenth >= 0.1) {
 
 		tenth = 0;
-		// DrawDebugCircle(GetWorld(), sourceLoc, 5.0, 360, colours[0], false, 30, 0, 1, FVector(1.f,0.f,0.f), FVector(0.f,1.f,0.f), false);
-		// ATimeSphere *ts = NewObject<ATimeSphere>();
-		// ATimeSphere *ts = SpawnActor<ATimeSphere>(GetWorld(), Pawn->GetActorLocation(), Pawn->GetActorRotation(), NULL, NULL, false);
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.Owner = NULL;
 		SpawnInfo.Instigator = NULL;
@@ -475,11 +497,10 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
   			FColor(255,0,0), false, 30, 0, 4);
 		}
 		if (ts != NULL) {
-		// ts->init(sourceLoc);
-		timeSpheres.Push(ts);
+			timeSpheres.Push(ts);
+		} else UE_LOG(LogNet, Log, TEXT("NOOOOOOOOOOOOOOO"));
 	}
-	else UE_LOG(LogNet, Log, TEXT("NOOOOOOOOOOOOOOO"));
-	}
+
 	// keep updating the destination every tick while desired
 	if (bMoveToMouseCursor)
 	{
@@ -525,6 +546,8 @@ void AArdanPlayerController::SetupInputComponent()
   InputComponent->BindAction("Reverse", IE_Released, this, &AArdanPlayerController::reverseReleased);
 
   InputComponent->BindAction("ResetReplay", IE_Pressed, this, &AArdanPlayerController::replayPressed);
+	InputComponent->BindAction("NewTimeline", IE_Pressed, this, &AArdanPlayerController::NewTimeline);
+
 
 }
 
