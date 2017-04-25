@@ -69,6 +69,7 @@ void SensorManager::NewTimeline() {
 	for (ASensor* sensor : sensors) {
 		sensor->ResetTimeline();
 		sensor->NewTimeline();
+		sensor->SnapshotState(0.0);
 		sensor->ReflectState();
 	}
 }
@@ -91,11 +92,11 @@ void SensorManager::ChangeTimeline(int index) {
 bool SensorManager::DiffState(int index, float timeStamp) {
 	if (!bHasHistory) return false;
 	bool allChanged = false;
-	bool changed = false;
+	bool equal = false;
 	for (ASensor* sensor : sensors) {
-		changed = sensor->DiffCurrentState(index, timeStamp);
-		if (changed) sensor->ColourSensor(1);
+		equal = sensor->DiffCurrentState(index, timeStamp);
+		if (!equal) sensor->ColourSensor(1);
 		else sensor->ColourSensor(0);
 	}
-	return changed;
+	return equal;
 }
