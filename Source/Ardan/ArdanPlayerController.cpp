@@ -459,6 +459,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 			}
 			/*recordActors(DeltaTime);
 			recordPawnActors(DeltaTime);*/
+			sensorManager->FastForwardState(replayTime);
 		}
 		if (bRecording) {
 			recordActors(DeltaTime);

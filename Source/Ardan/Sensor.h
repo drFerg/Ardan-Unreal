@@ -60,6 +60,8 @@ public:
 
 	void ChangeTimeline(int index);
 
+	FSensorState * GetStatefromTimeline(FSensorHistory * h, float timeStamp);
+
 	FSensorState * GetStatefromTimeline(int index, float timeStamp);
 
 	bool StateIsEqual(FSensorState* a, FSensorState* b);

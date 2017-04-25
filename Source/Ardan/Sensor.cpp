@@ -38,7 +38,7 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
 	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	SetLed(1, 1, 1);
-	SnapshotState(GetWorld()->DeltaTimeSeconds);
+	SnapshotState(GetWorld()->TimeSeconds);
 	if (!active) return;
 	fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
@@ -61,7 +61,7 @@ void ASensor::OnEndOverlap(class AActor* OverlappedActor,
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
 	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	SetLed(0,0,0);
-	SnapshotState(GetWorld()->DeltaTimeSeconds);
+	SnapshotState(GetWorld()->TimeSeconds);
 
 	if (!active) return;
 	fbb.Clear();
@@ -242,9 +242,11 @@ void ASensor::ReceivePacket(uint8* pkt) {
 void ASensor::SnapshotState(float timeStamp) {
 	//if (!bstateBeenModified) return;
 	FSensorState* s = new FSensorState();
-	s = state;
+	*s = *state;
 	s->timeStamp = timeStamp;
 	history->timeline.Add(s);
+	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d %f"), state->R, state->G, state->B, s->timeStamp);
+	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), s->R, s->G, s->B);
 }
 
 void ASensor::RewindState(float requestTime) {
@@ -258,12 +260,13 @@ void ASensor::RewindState(float requestTime) {
 
 
 void ASensor::ReplayState(float timeStamp) {
-	int i = 0;
-	FSensorState* s = history->timeline[i];
-	while (i < history->timeline.Num() && s->timeStamp < timeStamp) {
-		s = history->timeline[++i];
-	}
-	state = s;
+	//int i = 0;
+	//FSensorState* s = history->timeline[i];
+	//while (i < history->timeline.Num() && s->timeStamp < timeStamp) {
+	//	s = history->timeline[++i];
+	//}
+	//state = s;
+	state = GetStatefromTimeline(history, timeStamp);
 }
 
 void ASensor::ChangeTimeline(int index) {
@@ -273,15 +276,22 @@ void ASensor::ChangeTimeline(int index) {
 	ReflectState();
 }
 
-FSensorState* ASensor::GetStatefromTimeline(int index, float timeStamp) {
-	FSensorHistory* h = histories[index];
+FSensorState* ASensor::GetStatefromTimeline(FSensorHistory* h, float timeStamp) {
 	FSensorState* s = NULL;
+	UE_LOG(LogNet, Log, TEXT("GSFT: (%d)(%d)"), h->index, h->timeline.Num());
 	while (h->index < h->timeline.Num() && h->timeline[h->index]->timeStamp <= timeStamp) {
+
 		s = h->timeline[h->index];
+		UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), s->R, s->G, s->B, s->timeStamp);
+
 		h->currentState = s;
 		h->index++;
 	}
 	return s ? s : h->currentState;
+}
+
+FSensorState* ASensor::GetStatefromTimeline(int index, float timeStamp) {
+	return GetStatefromTimeline(histories[index], timeStamp);
 }
 
 bool ASensor::StateIsEqual(FSensorState* a, FSensorState* b) {
@@ -295,12 +305,15 @@ bool ASensor::DiffCurrentState(int stateIndex, float timeStamp) {
 /*Reflects the stored state on the virtual object*/
 void ASensor::ReflectState() {
 	SetLed(state->R, state->G, state->B);
+	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), state->R, state->G, state->B);
 }
 
 void ASensor::ResetTimeline() {
 	/* State has already been stored in history */
 	delete state;
+	history->index = 0;
 	state = history->timeline[0];
+	history->currentState = state;
 }
 
 void ASensor::NewTimeline() {
