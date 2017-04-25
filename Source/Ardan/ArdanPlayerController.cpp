@@ -215,7 +215,7 @@ void AArdanPlayerController::recordPawnActors(float deltaTime) {
 	}
 }
 
-void AArdanPlayerController::rewindMeshActors(FHistory *history, bool freeze) {
+void AArdanPlayerController::rewindMeshActors(FHistory *history, bool freeze, float timeStamp) {
 	// Rewind each recorded actor one tick
 	
 	history->bfinished = false;
@@ -223,7 +223,7 @@ void AArdanPlayerController::rewindMeshActors(FHistory *history, bool freeze) {
 		FObjectInfo *actorInfo = itr.Value;
 		UStaticMeshComponent *mesh = ((AStaticMeshActor *)actorInfo->actor)->GetStaticMeshComponent();
 		//UE_LOG(LogNet, Log, TEXT("ATime: %f : %f: %d"), (*actorInfo->hist)[actorInfo->index]->timeStamp, curTime, actorInfo->index);
-		while (actorInfo->index > 0 && (*actorInfo->hist)[actorInfo->index - 1]->timeStamp >= curTime) {
+		while (actorInfo->index > 0 && (*actorInfo->hist)[actorInfo->index - 1]->timeStamp >= timeStamp) {
 			actorInfo->index--;
 			FObjectMeta *meta = (*actorInfo->hist)[actorInfo->index];
 			mesh->SetMobility(EComponentMobility::Movable);
@@ -431,9 +431,9 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		replayTime -= DeltaTime;
 		curTime -= DeltaTime;
 
-		rewindMeshActors(currentHistory, false);
+		rewindMeshActors(currentHistory, false, curTime);
 		for (FHistory *history : histories) {
-			rewindMeshActors(history, true);
+			rewindMeshActors(history, true, curTime);
 		}
 
 		rewindPawnActors(currentPawnHistory);

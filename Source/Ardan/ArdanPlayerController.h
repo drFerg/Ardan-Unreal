@@ -103,7 +103,7 @@ protected:
 	void copyPawnActors(FHistory * dstHistory, FHistory * srcHistory);
 	void diff(FObjectInfo * info);
 	void NewTimeline();
-	void rewindMeshActors(FHistory *history, bool freeze);
+	void rewindMeshActors(FHistory *history, bool freeze, float timeStamp);
 	void rewindPawnActors(FHistory *history);
 	void replayActors(FHistory *history);
 	void replayPawnActors(FHistory * history);
