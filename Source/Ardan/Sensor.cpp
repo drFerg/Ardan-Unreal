@@ -160,7 +160,7 @@ void ASensor::BeginPlay() {
 	state->R = 0;
 	state->G = 0;
 	state->B = 0;
-	history->timeline.Add(state);
+	SnapshotState(0.0);
 
 	prevLocation = this->GetActorLocation();
 	sendLocationUpdate();
@@ -240,7 +240,7 @@ void ASensor::ReceivePacket(uint8* pkt) {
 }
 
 void ASensor::SnapshotState(float timeStamp) {
-	if (!bstateBeenModified) return;
+	//if (!bstateBeenModified) return;
 	FSensorState* s = new FSensorState();
 	s = state;
 	s->timeStamp = timeStamp;
@@ -274,13 +274,14 @@ void ASensor::ChangeTimeline(int index) {
 }
 
 FSensorState* ASensor::GetStatefromTimeline(int index, float timeStamp) {
-	int i = 0;
 	FSensorHistory* h = histories[index];
-	FSensorState* s = h->timeline[h->index];
-	while (i < h->timeline.Num() && s->timeStamp < timeStamp) {
-		s = h->timeline[++h->index];
+	FSensorState* s = NULL;
+	while (h->index < h->timeline.Num() && h->timeline[h->index]->timeStamp <= timeStamp) {
+		s = h->timeline[h->index];
+		h->currentState = s;
+		h->index++;
 	}
-	return s;
+	return s ? s : h->currentState;
 }
 
 bool ASensor::StateIsEqual(FSensorState* a, FSensorState* b) {
@@ -305,6 +306,7 @@ void ASensor::ResetTimeline() {
 void ASensor::NewTimeline() {
 	histories.Push(history);
 	history = new FSensorHistory();
+	bstateBeenModified = true;
 }
 
 void ASensor::ColourSensor(int type) {

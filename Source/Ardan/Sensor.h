@@ -33,6 +33,7 @@ struct FSensorHistory {
 	GENERATED_BODY()
 	TArray<FSensorState*> timeline;
 	int index = 0;
+	FSensorState* currentState;
 };
 
 UCLASS()
