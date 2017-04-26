@@ -12,38 +12,11 @@
 #include "TimeSphere.h"
 
 #include "unrealpkts_generated.h"
-
+#include "ActorManager.h"
 #include "GameFramework/PlayerController.h"
 #include "ArdanPlayerController.generated.h"
 
-USTRUCT()
-struct FObjectMeta {
-	GENERATED_BODY()
-	FVector velocity;
-	FVector angularVelocity;
-	FTransform transform;
-	float deltaTime;
-	float timeStamp;
-};
 
-USTRUCT()
-struct FObjectInfo {
-	GENERATED_BODY()
-	AActor *actor;
-	FObjectInfo *ancestor;
-	FObjectInfo *descendant;
-	TArray<FObjectMeta*> *hist;
-	int index;
-	bool bisGhost = false;
-};
-
-USTRUCT()
-struct FHistory {
-	GENERATED_BODY()
-	TMap<FString, FObjectInfo*> histMap;
-	bool bfinished = false;
-	int level = 1;
-};
 
 UCLASS()
 class AArdanPlayerController : public APlayerController {
@@ -96,44 +69,23 @@ protected:
 	void speedSlow();
 	void speedNormal();
 	void speedFast();
-	void recordActors(float deltaTime);
-	void recordPawnActors(float deltaTime);
-	void initHist();
-	void copyActors(FHistory* dstHistory, FHistory *srcHistory);
-	void copyPawnActors(FHistory * dstHistory, FHistory * srcHistory);
-	void diff(FObjectInfo * info);
+	
 	void NewTimeline();
-	void rewindMeshActors(FHistory *history, bool freeze, float timeStamp);
-	void rewindPawnActors(FHistory *history);
-	void replayActors(FHistory *history);
-	void replayPawnActors(FHistory * history);
-	void resetActors(FHistory *history);
-	void resetPawnActors(FHistory * history);
+	
 	void replayPressed();
-
-	void ghostActor(AActor * mesh, float amount);
-
-	void colourActor(AActor * mesh);
 
 
 	private:
-		SensorManager *sensorManager;
-		TArray<FHistory*> pawnHistories;
-		TArray<FHistory*> histories;
-		UObject* NewSubObject;
-		TArray<FTransform*> locHistory;
+		SensorManager* sensorManager;
+		ActorManager* actorManager;
 		TArray<ATimeSphere*> timeSpheres;
-		TArray<void *> timelines;
-		FHistory *currentHistory;
-		FHistory *currentPawnHistory;
+
 		int index = 0;
 		float replayTime = 0;
 		float curTime = 0;
 		bool bReverse = false;
 		bool bReplay = false;
 		bool bRecording = false;
-		TArray<ASensor*> sensors;
-		TMap<int, ASensor*> sensorTable;
 		TSubclassOf<class UObject> sensorBlueprint;
 		int currentCam = 0;
 		TArray<AActor*> cameras;
