@@ -86,7 +86,6 @@ protected:
 		bool bReverse = false;
 		bool bReplay = false;
 		bool bRecording = false;
-		TSubclassOf<class UObject> sensorBlueprint;
 		int currentCam = 0;
 		TArray<AActor*> cameras;
 		const float SmoothBlendTime = 0.75f;

@@ -22,13 +22,6 @@ AArdanPlayerController::AArdanPlayerController() {
 
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
-	UBlueprint* blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/Sensor/SensorMesh.SensorMesh'")));
-	sensorBlueprint = (UClass*)(blueprint->GeneratedClass);
-	if (sensorBlueprint != NULL) {
-		UE_LOG(LogNet, Log, TEXT("BName: %s"), *(sensorBlueprint->GetClass()->GetName()));
-	} else {
-		UE_LOG(LogNet, Log, TEXT("I got nothing"));
-	}
 
   /* Networking setup */
 	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
