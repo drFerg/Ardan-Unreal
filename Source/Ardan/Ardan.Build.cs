@@ -8,5 +8,7 @@ public class Ardan : ModuleRules
 	{
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "Sockets",
 		"Networking" });
-	}
+
+        //PublicIncludePaths.AddRange(new string[] { "C:PATH/TO/flatbuffers/include/" });
+    }
 }
