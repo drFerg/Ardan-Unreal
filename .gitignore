@@ -6,3 +6,5 @@ Binaries/*
 .vs/*
 enc_temp_folder/*
 desktop.ini
+Ardan.sln
+Source/Ardan/Ardan.Build.cs
