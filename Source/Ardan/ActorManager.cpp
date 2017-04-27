@@ -338,6 +338,8 @@ void UActorManager::copyPawnActors(FHistory* dstHistory, FHistory *srcHistory) {
 		APawn *newb = world->SpawnActor<APawn>(info->actor->GetClass(), info->actor->GetActorTransform(), spawnParams);
 		// Possess the new actor
 		newb->SpawnDefaultController();
+		ACharacter* c = (ACharacter*)newb;
+		c->GetCharacterMovement()->MaxWalkSpeed = ((ACharacter*)info->actor)->GetCharacterMovement()->MaxWalkSpeed;
 		if (controller->GetPawn() == info->actor) controller->Possess(newb);
 		//force new actor to old actors position 
 		newb->SetActorTransform(info->actor->GetActorTransform());
