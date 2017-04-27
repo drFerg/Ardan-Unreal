@@ -143,8 +143,8 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		}
 	}
   
-	//actorManager->diff(NULL);
-	//sensorManager->DiffState(0, curTime);
+	actorManager->diff(NULL);
+	sensorManager->DiffState(0, curTime);
 
 	// /* Working out FPS */
 	

@@ -269,6 +269,10 @@ void UActorManager::initHist() {
 		FObjectInfo actorInfo;
 		actorInfo.actor = actor;
 		actorInfo.actorName = actor->GetName();
+		actorInfo.ancestor = NULL;
+		actorInfo.descendant = NULL;
+		actorInfo.index = 0;
+		actorInfo.bisGhost = false;
 		//actorInfo->hist = new TArray<FObjectMeta*>();
 		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentHistory->histMap.Add(actor->GetName(), actorInfo);
@@ -281,6 +285,10 @@ void UActorManager::initHist() {
 		FObjectInfo actorInfo;
 		actorInfo.actor = actor;
 		actorInfo.actorName = actor->GetName();
+		actorInfo.ancestor = NULL;
+		actorInfo.descendant = NULL;
+		actorInfo.index = 0;
+		actorInfo.bisGhost = false;
 		//actorInfo->hist = new TArray<FObjectMeta*>();
 		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentPawnHistory->histMap.Add(actor->GetName(), actorInfo);
@@ -308,6 +316,7 @@ void UActorManager::copyActors(FHistory* dstHistory, FHistory *srcHistory) {
 		actorInfo.actorName = newb->GetName();
 		actorInfo.ancestor = info;
 		actorInfo.ancestorName = info->actorName;
+		actorInfo.index = 0;
 		info->descendant = &actorInfo;
 		info->descendantName = actorInfo.actorName;
 		//actorInfo->hist = new TArray<FObjectMeta*>();
@@ -343,6 +352,7 @@ void UActorManager::copyPawnActors(FHistory* dstHistory, FHistory *srcHistory) {
 		actorInfo.actorName = newb->GetName();
 		actorInfo.ancestor = info;
 		actorInfo.ancestorName = info->actorName;
+		actorInfo.index = 0;
 		info->descendant = &actorInfo;
 		info->descendantName = actorInfo.actorName;
 		//actorInfo->hist = new TArray<FObjectMeta*>();
