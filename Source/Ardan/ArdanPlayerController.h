@@ -40,6 +40,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PlayerTick(float DeltaTime) override;
+	void LoadArdanState();
 	virtual void SetupInputComponent() override;
 	// End PlayerController interface
 
@@ -64,6 +65,7 @@ protected:
 	void Pause();
 	void NextCamera();
 	void update_sensors();
+	void SaveArdanState();
 	void reversePressed();
 	void reverseReleased();
 	void speedSlow();
@@ -77,7 +79,7 @@ protected:
 
 	private:
 		SensorManager* sensorManager;
-		ActorManager* actorManager;
+		UActorManager* actorManager;
 		TArray<ATimeSphere*> timeSpheres;
 
 		int index = 0;
@@ -93,6 +95,7 @@ protected:
 		bool slow = false;
 		float elapsed = 0;
 		float tenth = 0;
+		float rtick = 0;
 		int tickCount = 0;
 		ISocketSubsystem* sockSubSystem;
 		FSocket* socket;

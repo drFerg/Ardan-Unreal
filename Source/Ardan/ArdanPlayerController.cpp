@@ -5,6 +5,8 @@
 #include "AI/Navigation/NavigationSystem.h"
 #include "Runtime/Engine/Classes/Components/DecalComponent.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "ArdanSave.h"
 #include "Sensor.h"
 #include "DrawDebugHelpers.h"
 #include "EngineUtils.h"
@@ -58,7 +60,9 @@ void AArdanPlayerController::BeginPlay() {
 	}
 	UE_LOG(LogNet, Log, TEXT("Found %d cameras"), cameras.Num());
 
-	actorManager = new ActorManager(GetWorld(), this);
+	//actorManager = NewNamedObject<UActorManager>(this, FString("ActorManager"), RF_NoFlags, UActorManager::StaticClass()); 
+	actorManager = NewObject<UActorManager>();
+	actorManager->init(GetWorld(), this);
 	actorManager->initHist();
 	sensorManager = new SensorManager(GetWorld());
 	sensorManager->FindSensors();
@@ -97,6 +101,9 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
 
 	if (UGameplayStatics::IsGamePaused(GetWorld())) return;
+	elapsed += DeltaTime;
+	tenth += DeltaTime;
+	rtick += DeltaTime;
 
 	APawn* const Pawn = GetPawn();
   FVector sourceLoc = Pawn->GetActorLocation();
@@ -121,7 +128,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		curTime += DeltaTime;
 		if (bReplay) {
 			replayTime += DeltaTime;
-			UE_LOG(LogNet, Log, TEXT("Replaying: %f"), replayTime);
+			//UE_LOG(LogNet, Log, TEXT("Replaying: %f"), replayTime);
 			actorManager->replayCurrentActors(replayTime);
 			actorManager->replayAllActors(replayTime);
 			actorManager->replayCurrentPawnActors(replayTime);
@@ -129,18 +136,18 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 
 			sensorManager->FastForwardState(replayTime);
 		}
-		if (bRecording) {
+		if (bRecording && rtick >= 0.03) {
+			rtick = 0;
 			actorManager->recordActors(DeltaTime, curTime);
 			actorManager->recordPawnActors(DeltaTime, curTime);
 		}
 	}
   
-	actorManager->diff(NULL);
-	sensorManager->DiffState(0, curTime);
+	//actorManager->diff(NULL);
+	//sensorManager->DiffState(0, curTime);
 
 	// /* Working out FPS */
-	elapsed += DeltaTime;
-	tenth += DeltaTime;
+	
 	tickCount += 1;
 	if (elapsed >= 1) {
 		UE_LOG(LogNet, Log, TEXT("TSTAMP: %f %f %f %d "), DeltaTime, 1/DeltaTime,
@@ -188,6 +195,32 @@ void AArdanPlayerController::update_sensors() {
   }
 }
 
+void AArdanPlayerController::SaveArdanState() {
+	UArdanSave* save = Cast<UArdanSave>(UGameplayStatics::CreateSaveGameObject(UArdanSave::StaticClass()));
+	save->PlayerName = FString("ARDAN");
+	save->currentPawnHistory = *(actorManager->currentPawnHistory);
+	save->currentHistory = *(actorManager->currentHistory);
+	save->currentHistory.histMap = actorManager->currentHistory->histMap;
+	save->currentHistory.name = FString("HELLO");
+	UE_LOG(LogNet, Log, TEXT("ARDAN Saved: %s (%d:%d)"), *save->SaveSlotName, 
+		actorManager->currentHistory->histMap.Num(), 
+		save->currentHistory.histMap.Num());
+	UGameplayStatics::SaveGameToSlot(save, save->SaveSlotName, save->UserIndex);
+}
+
+void AArdanPlayerController::LoadArdanState() {
+	UArdanSave* save = Cast<UArdanSave>(UGameplayStatics::CreateSaveGameObject(UArdanSave::StaticClass()));
+	save = Cast<UArdanSave>(UGameplayStatics::LoadGameFromSlot(save->SaveSlotName, save->UserIndex));
+	FString PlayerNameToDisplay = save->PlayerName;
+	*actorManager->currentHistory = save->currentHistory;
+	*actorManager->currentPawnHistory = save->currentPawnHistory;
+	UE_LOG(LogNet, Log, TEXT("ARDAN LOADED: %s (%d)"), *save->currentHistory.name, save->currentHistory.histMap.Num());
+	actorManager->FixReferences(actorManager->currentHistory);
+	actorManager->FixPawnReferences(actorManager->currentPawnHistory);
+	replayPressed();
+
+}
+
 void AArdanPlayerController::SetupInputComponent()
 {
 	// set up gameplay key bindings
@@ -217,7 +250,8 @@ void AArdanPlayerController::SetupInputComponent()
   InputComponent->BindAction("ResetReplay", IE_Pressed, this, &AArdanPlayerController::replayPressed);
 	InputComponent->BindAction("NewTimeline", IE_Pressed, this, &AArdanPlayerController::NewTimeline);
 
-
+	InputComponent->BindAction("Save", IE_Pressed, this, &AArdanPlayerController::SaveArdanState);
+	InputComponent->BindAction("Load", IE_Pressed, this, &AArdanPlayerController::LoadArdanState);
 }
 
 void AArdanPlayerController::OnResetVR()

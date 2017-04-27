@@ -6,26 +6,29 @@
 #include "UObjectGlobals.h"
 #include "Engine/StaticMeshActor.h"
 
-ActorManager::ActorManager(UWorld* w, APlayerController* c) {
+UActorManager::UActorManager() {
+	
+}
+
+UActorManager::~UActorManager()
+{
+}
+
+void UActorManager::init(UWorld* w, APlayerController* c) {
 	world = w;
 	controller = c;
 }
 
-ActorManager::~ActorManager()
-{
-}
-
-
-void ActorManager::replayActors(FHistory *history, float timeStamp) {
+void UActorManager::replayActors(FHistory *history, float timeStamp) {
 	for (auto &itr : history->histMap) {
-		FObjectInfo* info = itr.Value;
+		FObjectInfo* info = &(itr.Value);
 		UStaticMeshComponent* mesh = ((AStaticMeshActor*)info->actor)->GetStaticMeshComponent();
-		TArray<FObjectMeta*>* hist = info->hist;
+		TArray<FObjectMeta>* hist = &info->hist;
 		/* Make sure the mesh is movable */
 		//mesh->SetMobility(EComponentMobility::Movable);
-		while (info->index < hist->Num() && (*hist)[info->index]->timeStamp <= timeStamp) {
+		while (info->index < hist->Num() && (*hist)[info->index].timeStamp <= timeStamp) {
 			//UE_LOG(LogNet, Log, TEXT("TSTAMP: %f <:> %f"), (*hist)[index]->timeStamp, curTime);
-			FObjectMeta *meta = (*hist)[info->index];
+			FObjectMeta* meta = &(*hist)[info->index];
 			mesh->SetSimulatePhysics(false);
 			info->actor->SetActorTransform(meta->transform);
 			mesh->SetPhysicsLinearVelocity(meta->velocity);
@@ -41,18 +44,18 @@ void ActorManager::replayActors(FHistory *history, float timeStamp) {
 	}
 }
 
-void ActorManager::replayPawnActors(FHistory *history, float timeStamp) {
+void UActorManager::replayPawnActors(FHistory *history, float timeStamp) {
 	for (auto &itr : history->histMap) {
-		FObjectInfo* info = itr.Value;
-		TArray<FObjectMeta*>* hist = info->hist;
-		while (info->index < hist->Num() && (*hist)[info->index]->timeStamp <= timeStamp) {
-			FObjectMeta *meta = (*hist)[info->index];
+		FObjectInfo* info = &(itr.Value);
+		TArray<FObjectMeta>* hist = &info->hist;
+		while (info->index < hist->Num() && (*hist)[info->index].timeStamp <= timeStamp) {
+			FObjectMeta *meta = &(*hist)[info->index];
 			//UE_LOG(LogNet, Log, TEXT("inputvector: %s"), *(meta->velocity.ToString()));
 
 			info->actor->SetActorTransform(meta->transform);
 			//((APawn*)info->actor)->AddMovementInput(meta->velocity);
 			info->index += 1;
-			if (info->index >= (*hist).Num()) {
+			if (info->index >= hist->Num()) {
 				//UE_LOG(LogNet, Log, TEXT("BREAK"));
 				/*info->actor->StaticMeshComponent->SetSimulatePhysics(false);*/
 				//				mesh->SetMobility(EComponentMobility::Stationary);
@@ -63,36 +66,63 @@ void ActorManager::replayPawnActors(FHistory *history, float timeStamp) {
 	}
 }
 
-void ActorManager::replayCurrentActors(float timeStamp) {
+void UActorManager::replayCurrentActors(float timeStamp) {
 	if (!currentHistory->bfinished) replayActors(currentHistory, timeStamp);
 }
 
-void ActorManager::replayAllActors(float timeStamp) {
+void UActorManager::replayAllActors(float timeStamp) {
 	for (FHistory *history : histories) {
 		if (!history->bfinished) replayActors(history, timeStamp);
 	}
 }
 
-void ActorManager::replayCurrentPawnActors(float timeStamp) {
+void UActorManager::replayCurrentPawnActors(float timeStamp) {
 	if (!currentPawnHistory->bfinished) replayPawnActors(currentPawnHistory, timeStamp);
 }
 
-void ActorManager::replayAllPawnActors(float timeStamp) {
+void UActorManager::replayAllPawnActors(float timeStamp) {
 	for (FHistory *history : pawnHistories) {
 		if (!history->bfinished) replayPawnActors(history, timeStamp);
 	}
 }
 
-void ActorManager::resetActors(FHistory *history) {
+
+void UActorManager::FixReferences(FHistory* history) {
+	for (TActorIterator<AStaticMeshActor> ActorItr(world); ActorItr; ++ActorItr) {
+		AStaticMeshActor *actor = *ActorItr;
+		// Check if actor can actually move, if not don't bother recording.
+		if (!actor->GetStaticMeshComponent()->Mobility) continue;
+		FObjectInfo* info = history->histMap.Find(actor->GetName());
+		if (info == NULL) continue;
+		info->actor = actor;
+		info->ancestor = history->histMap.Find(info->ancestorName);
+		info->descendant = history->histMap.Find(info->descendantName);
+	}
+}
+
+void UActorManager::FixPawnReferences(FHistory* history) {
+	for (TActorIterator<APawn> ActorItr(world); ActorItr; ++ActorItr) {
+		APawn *actor = *ActorItr;
+		// Check if actor can actually move, if not don't bother recording.
+		FObjectInfo* info = history->histMap.Find(actor->GetName());
+		if (info == NULL) continue;
+		info->actor = actor;
+		info->ancestor = history->histMap.Find(info->ancestorName);
+		info->descendant = history->histMap.Find(info->descendantName);
+	}
+}
+
+void UActorManager::resetActors(FHistory *history) {
 	// Reset all actors to their initial start position and spawn new ghost objects to repeat their previous run
 	history->bfinished = false;
 	for (auto &itr : history->histMap) {
-		FObjectInfo* info = itr.Value;
+		FObjectInfo* info = &(itr.Value);
+		if (info->actor == NULL) continue;
 		UStaticMeshComponent* mesh = ((AStaticMeshActor*)info->actor)->GetStaticMeshComponent();
 		// Check if actor has an initial position and reset to it
-		if (info->hist->Num()) {
+		if (info->hist.Num()) {
 			info->index = 0;
-			FObjectMeta *meta = (*info->hist)[info->index];
+			FObjectMeta *meta = &(info->hist[info->index]);
 			info->actor->SetActorTransform(meta->transform);
 			info->actor->SetActorEnableCollision(false);
 			//mesh->SetMobility(EComponentMobility::Movable);
@@ -108,17 +138,17 @@ void ActorManager::resetActors(FHistory *history) {
 	}
 }
 
-void ActorManager::resetPawnActors(FHistory *history) {
+void UActorManager::resetPawnActors(FHistory *history) {
 	// Reset all actors to their initial start position and spawn new ghost objects to repeat their previous run
 	history->bfinished = false;
 	for (auto &itr : history->histMap) {
-		FObjectInfo* info = itr.Value;
+		FObjectInfo* info = &(itr.Value);
 		//UStaticMeshComponent* mesh = ((AStaticMeshActor*)info->actor)->GetStaticMeshComponent();
 		//info->bisGhost = true;
 		// Check if actor has an initial position and reset to it
-		if (info->hist->Num()) {
+		if (info->hist.Num()) {
 			info->index = 0;
-			FObjectMeta *meta = (*info->hist)[info->index];
+			FObjectMeta *meta = &(info->hist[info->index]);
 			info->actor->SetActorTransform(meta->transform);
 			info->actor->SetActorEnableCollision(false);
 			/*mesh->SetMobility(EComponentMobility::Movable);
@@ -134,53 +164,52 @@ void ActorManager::resetPawnActors(FHistory *history) {
 	}
 }
 
-void ActorManager::recordActors(float deltaTime, float timeStamp) {
+void UActorManager::recordActors(float deltaTime, float timeStamp) {
 	// Record a single tick for all actors
 	for (auto &itr : currentHistory->histMap) {
-		FObjectInfo* info = itr.Value;
+		FObjectInfo* info = &(itr.Value);
 		info->index++;
 		UStaticMeshComponent* mesh = ((AStaticMeshActor*)info->actor)->GetStaticMeshComponent();
 		FTransform curTrans = info->actor->GetTransform();
-		FObjectMeta *meta = NULL;
+		FObjectMeta meta;
 
-		meta = new FObjectMeta();
-		meta->transform = curTrans;
-		meta->velocity = mesh->GetPhysicsLinearVelocity();
-		meta->angularVelocity = mesh->GetPhysicsAngularVelocity();
-		meta->deltaTime = deltaTime;
-		meta->timeStamp = timeStamp;
+		meta.transform = curTrans;
+		meta.velocity = mesh->GetPhysicsLinearVelocity();
+		meta.angularVelocity = mesh->GetPhysicsAngularVelocity();
+		meta.deltaTime = deltaTime;
+		meta.timeStamp = timeStamp;
 
-		info->hist->Add(meta);
+		info->hist.Add(meta);
 
 	}
 }
 
-void ActorManager::recordPawnActors(float deltaTime, float timeStamp) {
+void UActorManager::recordPawnActors(float deltaTime, float timeStamp) {
 	// Record a single tick for all actors
 	for (auto &itr : currentPawnHistory->histMap) {
-		FObjectInfo* info = itr.Value;
+		FObjectInfo* info = &(itr.Value);
 		info->index++;
 		FTransform curTrans = info->actor->GetTransform();
-		FObjectMeta *meta = new FObjectMeta();
-		meta->transform = curTrans;
-		meta->velocity = ((APawn*)info->actor)->GetPendingMovementInputVector();
-		meta->deltaTime = deltaTime;
-		meta->timeStamp = timeStamp;
-		info->hist->Add(meta);
+		FObjectMeta meta;
+		meta.transform = curTrans;
+		meta.velocity = ((APawn*)info->actor)->GetPendingMovementInputVector();
+		meta.deltaTime = deltaTime;
+		meta.timeStamp = timeStamp;
+		info->hist.Add(meta);
 	}
 }
 
-void ActorManager::rewindMeshActors(FHistory *history, bool freeze, float timeStamp) {
+void UActorManager::rewindMeshActors(FHistory *history, bool freeze, float timeStamp) {
 	// Rewind each recorded actor one tick
 
 	history->bfinished = false;
 	for (auto &itr : history->histMap) {
-		FObjectInfo *actorInfo = itr.Value;
+		FObjectInfo* actorInfo = &(itr.Value);
 		UStaticMeshComponent *mesh = ((AStaticMeshActor *)actorInfo->actor)->GetStaticMeshComponent();
 		//UE_LOG(LogNet, Log, TEXT("ATime: %f : %f: %d"), (*actorInfo->hist)[actorInfo->index]->timeStamp, curTime, actorInfo->index);
-		while (actorInfo->index > 0 && (*actorInfo->hist)[actorInfo->index - 1]->timeStamp >= timeStamp) {
+		while (actorInfo->index > 0 && (actorInfo->hist[actorInfo->index - 1]).timeStamp >= timeStamp) {
 			actorInfo->index--;
-			FObjectMeta *meta = (*actorInfo->hist)[actorInfo->index];
+			FObjectMeta* meta = &(actorInfo->hist[actorInfo->index]);
 			mesh->SetMobility(EComponentMobility::Movable);
 			actorInfo->actor->SetActorTransform(meta->transform);
 			mesh->SetPhysicsLinearVelocity(meta->velocity);
@@ -193,39 +222,39 @@ void ActorManager::rewindMeshActors(FHistory *history, bool freeze, float timeSt
 }
 
 
-void ActorManager::rewindPawnActors(FHistory *history) {
+void UActorManager::rewindPawnActors(FHistory *history) {
 	// Rewind each recorded actor one tick
 	for (auto &itr : history->histMap) {
-		FObjectInfo *actorInfo = itr.Value;
-		if (actorInfo->hist->Num()) {
+		FObjectInfo *actorInfo = &(itr.Value);
+		if (actorInfo->hist.Num()) {
 			if (actorInfo->index == 0) continue;
-			FObjectMeta *meta = (*actorInfo->hist)[--(actorInfo->index)];
+			FObjectMeta* meta = &(actorInfo->hist[--(actorInfo->index)]);
 			actorInfo->actor->SetActorTransform(meta->transform);
 		}
 	}
 }
 
-void ActorManager::rewindCurrentMeshActors(bool freeze, float timeStamp) {
+void UActorManager::rewindCurrentMeshActors(bool freeze, float timeStamp) {
 	rewindMeshActors(currentHistory, freeze, timeStamp);
 }
 
-void ActorManager::rewindCurrentPawnActors() {
+void UActorManager::rewindCurrentPawnActors() {
 	rewindPawnActors(currentPawnHistory);
 }
 
-void ActorManager::rewindAllMeshActors(bool freeze, float timeStamp) {
+void UActorManager::rewindAllMeshActors(bool freeze, float timeStamp) {
 	for (FHistory *history : histories) {
 		rewindMeshActors(history, freeze, timeStamp);
 	}
 }
 
-void ActorManager::rewindAllPawnActors() {
+void UActorManager::rewindAllPawnActors() {
 	for (FHistory *history : pawnHistories) {
 		rewindPawnActors(history);
 	}
 }
 
-void ActorManager::initHist() {
+void UActorManager::initHist() {
 	currentPawnHistory = new FHistory();
 	currentHistory = new FHistory();
 	// Initialise and add all static mesh actors records to our history map
@@ -237,10 +266,11 @@ void ActorManager::initHist() {
 		UE_LOG(LogNet, Log, TEXT("A: %s"), *actor->GetName());
 
 		// Set up actorInfo object to record actor history
-		FObjectInfo *actorInfo = new FObjectInfo();
-		actorInfo->actor = actor;
-		actorInfo->hist = new TArray<FObjectMeta*>();
-		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
+		FObjectInfo actorInfo;
+		actorInfo.actor = actor;
+		actorInfo.actorName = actor->GetName();
+		//actorInfo->hist = new TArray<FObjectMeta*>();
+		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentHistory->histMap.Add(actor->GetName(), actorInfo);
 	}
 
@@ -248,20 +278,21 @@ void ActorManager::initHist() {
 		APawn *actor = *ActorItr;
 		UE_LOG(LogNet, Log, TEXT("A: %s"), *actor->GetName());
 		// Set up actorInfo object to record actor history
-		FObjectInfo *actorInfo = new FObjectInfo();
-		actorInfo->actor = actor;
-		actorInfo->hist = new TArray<FObjectMeta*>();
-		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
+		FObjectInfo actorInfo;
+		actorInfo.actor = actor;
+		actorInfo.actorName = actor->GetName();
+		//actorInfo->hist = new TArray<FObjectMeta*>();
+		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentPawnHistory->histMap.Add(actor->GetName(), actorInfo);
 	}
 }
 
-void ActorManager::copyActors(FHistory* dstHistory, FHistory *srcHistory) {
+void UActorManager::copyActors(FHistory* dstHistory, FHistory *srcHistory) {
 	FActorSpawnParameters spawnParams;
 	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	spawnParams.Template = NULL;
 	for (auto &iter : srcHistory->histMap) {
-		FObjectInfo* info = iter.Value;
+		FObjectInfo* info = &(iter.Value);
 		spawnParams.Template = info->actor;
 		AStaticMeshActor *newb = world->SpawnActor<AStaticMeshActor>(info->actor->GetClass(), info->actor->GetActorTransform(), spawnParams);
 		//force new actor to old actors position 
@@ -272,23 +303,26 @@ void ActorManager::copyActors(FHistory* dstHistory, FHistory *srcHistory) {
 		// Apply normal material to new model
 		colourActor(newb);
 		/* Create history in current history*/
-		FObjectInfo *actorInfo = new FObjectInfo();
-		actorInfo->actor = newb;
-		actorInfo->ancestor = info;
-		info->descendant = actorInfo;
-		actorInfo->hist = new TArray<FObjectMeta*>();
-		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
+		FObjectInfo actorInfo;
+		actorInfo.actor = newb;
+		actorInfo.actorName = newb->GetName();
+		actorInfo.ancestor = info;
+		actorInfo.ancestorName = info->actorName;
+		info->descendant = &actorInfo;
+		info->descendantName = actorInfo.actorName;
+		//actorInfo->hist = new TArray<FObjectMeta*>();
+		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		dstHistory->histMap.Add(newb->GetName(), actorInfo);
 	}
 }
 
-void ActorManager::copyPawnActors(FHistory* dstHistory, FHistory *srcHistory) {
+void UActorManager::copyPawnActors(FHistory* dstHistory, FHistory *srcHistory) {
 	FActorSpawnParameters spawnParams;
 	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	spawnParams.Template = NULL;
 	//Pause();
 	for (auto &iter : srcHistory->histMap) {
-		FObjectInfo* info = iter.Value;
+		FObjectInfo* info = &(iter.Value);
 		//if (info->actor->GetActorClass() == 
 		//spawnParams.Template = info->actor;
 		UE_LOG(LogNet, Log, TEXT("A: %s"), *(info->actor->GetClass()->GetName()));
@@ -304,18 +338,20 @@ void ActorManager::copyPawnActors(FHistory* dstHistory, FHistory *srcHistory) {
 		// Apply normal material to new model
 		//colourActor(newb);
 		/* Create history in current history*/
-		FObjectInfo *actorInfo = new FObjectInfo();
-		actorInfo->actor = newb;
-		actorInfo->ancestor = info;
-		info->descendant = actorInfo;
-		actorInfo->hist = new TArray<FObjectMeta*>();
-		TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
+		FObjectInfo actorInfo;
+		actorInfo.actor = newb;
+		actorInfo.actorName = newb->GetName();
+		actorInfo.ancestor = info;
+		actorInfo.ancestorName = info->actorName;
+		info->descendant = &actorInfo;
+		info->descendantName = actorInfo.actorName;
+		//actorInfo->hist = new TArray<FObjectMeta*>();
+		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		dstHistory->histMap.Add(newb->GetName(), actorInfo);
 	}
-	//Pause();
 }
 
-void ActorManager::NewTimeline() {
+void UActorManager::NewTimeline() {
 	FHistory* oldHistory = currentHistory;
 	histories.Push(currentHistory);
 	for (FHistory *history : histories) {
@@ -336,7 +372,7 @@ void ActorManager::NewTimeline() {
 	copyPawnActors(currentPawnHistory, oldHistory);
 }
 
-void ActorManager::ResetTimelines() {
+void UActorManager::ResetTimelines() {
 	resetActors(currentHistory);
 	for (FHistory *history : histories) {
 		resetActors(history);
@@ -348,8 +384,8 @@ void ActorManager::ResetTimelines() {
 	}
 }
 
-void ActorManager::diff(FObjectInfo* info) {
-	info = *(currentPawnHistory->histMap.Find(controller->GetPawn()->GetName()));
+void UActorManager::diff(FObjectInfo* info) {
+	info = (currentPawnHistory->histMap.Find(controller->GetPawn()->GetName()));
 	if (!info || !info->ancestor) return;
 	FObjectInfo *anc = info->ancestor;
 	float dist = anc->actor->GetDistanceTo(info->actor);
@@ -364,7 +400,7 @@ void ActorManager::diff(FObjectInfo* info) {
 	}
 }
 
-void ActorManager::ghostActor(AActor *mesh, float amount) {
+void UActorManager::ghostActor(AActor *mesh, float amount) {
 
 	UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Game/Materials/Transparency_Material.Transparency_Material'"));
 	UMaterialInstanceDynamic* matInst = UMaterialInstanceDynamic::Create(mat, NULL); //BaseMat must have material parameter called "Color"
@@ -372,7 +408,7 @@ void ActorManager::ghostActor(AActor *mesh, float amount) {
 	((UMeshComponent*)mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, matInst);
 }
 
-void ActorManager::colourActor(AActor *mesh) {
+void UActorManager::colourActor(AActor *mesh) {
 	UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial'"));
 	((UMeshComponent*)mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, mat);
 }

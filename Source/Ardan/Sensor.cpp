@@ -278,11 +278,11 @@ void ASensor::ChangeTimeline(int index) {
 
 FSensorState* ASensor::GetStatefromTimeline(FSensorHistory* h, float timeStamp) {
 	FSensorState* s = NULL;
-	UE_LOG(LogNet, Log, TEXT("GSFT: (%d)(%d)"), h->index, h->timeline.Num());
+	//UE_LOG(LogNet, Log, TEXT("GSFT: (%d)(%d)"), h->index, h->timeline.Num());
 	while (h->index < h->timeline.Num() && h->timeline[h->index]->timeStamp <= timeStamp) {
 
 		s = h->timeline[h->index];
-		UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), s->R, s->G, s->B, s->timeStamp);
+		//UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), s->R, s->G, s->B, s->timeStamp);
 
 		h->currentState = s;
 		h->index++;
@@ -305,7 +305,7 @@ bool ASensor::DiffCurrentState(int stateIndex, float timeStamp) {
 /*Reflects the stored state on the virtual object*/
 void ASensor::ReflectState() {
 	SetLed(state->R, state->G, state->B);
-	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), state->R, state->G, state->B);
+	//UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), state->R, state->G, state->B);
 }
 
 void ASensor::ResetTimeline() {
