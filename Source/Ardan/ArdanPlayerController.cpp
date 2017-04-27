@@ -80,7 +80,8 @@ void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 
 void AArdanPlayerController::NewTimeline() {
 	bRecording = true;
-	bReplay = true;
+	bReplay = false;
+	bReplayHistory = true;
 	curTime = 0;
 	replayTime = 0;
 	actorManager->NewTimeline();
@@ -90,6 +91,7 @@ void AArdanPlayerController::NewTimeline() {
 void AArdanPlayerController::replayPressed() {
 	bReplay = true;
 	bRecording = false;
+	bReplayHistory = false;
 	curTime = 0;
 	replayTime = 0;
 	actorManager->ResetTimelines();
@@ -135,6 +137,11 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 			actorManager->replayAllPawnActors(replayTime);
 
 			sensorManager->FastForwardState(replayTime);
+		}
+		else if (bReplayHistory) {
+			replayTime += DeltaTime;
+			actorManager->replayAllActors(replayTime);
+			actorManager->replayAllPawnActors(replayTime);
 		}
 		if (bRecording && rtick >= 0.03) {
 			rtick = 0;

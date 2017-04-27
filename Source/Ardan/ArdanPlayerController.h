@@ -85,6 +85,7 @@ protected:
 		int index = 0;
 		float replayTime = 0;
 		float curTime = 0;
+		bool bReplayHistory = false;
 		bool bReverse = false;
 		bool bReplay = false;
 		bool bRecording = false;
