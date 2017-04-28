@@ -299,7 +299,10 @@ bool ASensor::StateIsEqual(FSensorState* a, FSensorState* b) {
 }
 
 bool ASensor::DiffCurrentState(int stateIndex, float timeStamp) {
-	return StateIsEqual(state, GetStatefromTimeline(stateIndex, timeStamp));
+	FSensorState* s = GetStatefromTimeline(stateIndex, timeStamp);
+	UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), state->R, state->G, state->B, state->timeStamp);
+	UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), s->R, s->G, s->B, s->timeStamp);
+	return StateIsEqual(state, s);
 }
 
 /*Reflects the stored state on the virtual object*/
