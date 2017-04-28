@@ -79,6 +79,7 @@ protected:
 
 	private:
 		SensorManager* sensorManager;
+		UPROPERTY()
 		UActorManager* actorManager;
 		TArray<ATimeSphere*> timeSpheres;
 
