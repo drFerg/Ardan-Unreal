@@ -96,12 +96,16 @@ public:
 	FHistory* currentHistory;
 	FHistory* currentPawnHistory;
 private:
+	UPROPERTY()
 	UWorld* world;
+	UPROPERTY()
 	APlayerController* controller;
 	
-
+	UPROPERTY()
 	bool bReverse = false;
+	UPROPERTY()
 	bool bReplay = false;
+	UPROPERTY()
 	bool bRecording = false;
 public:
 	UActorManager();
