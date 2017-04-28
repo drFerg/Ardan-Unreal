@@ -149,8 +149,9 @@ void UActorManager::resetPawnActors(FHistory *history) {
 		if (info->hist.Num()) {
 			info->index = 0;
 			FObjectMeta *meta = &(info->hist[info->index]);
-			info->actor->SetActorTransform(meta->transform);
 			info->actor->SetActorEnableCollision(false);
+			info->actor->SetActorTransform(meta->transform);
+
 			/*mesh->SetMobility(EComponentMobility::Movable);
 			mesh->SetPhysicsLinearVelocity(meta->velocity);
 			mesh->SetPhysicsAngularVelocity(meta->angularVelocity);*/
@@ -403,7 +404,7 @@ void UActorManager::diff(FObjectInfo* info) {
 	float dist = anc->actor->GetDistanceTo(info->actor);
 	UE_LOG(LogNet, Log, TEXT("dIST: %f"), dist);
 	if (dist > 50.0) {
-		UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Game/Materials/TimeSphere.TimeSphere'"));
+		UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("MaterialInstanceConstant'/Game/Materials/Red_Body.Red_Body'"));
 		((USkeletalMeshComponent*)info->actor->GetComponentByClass(USkeletalMeshComponent::StaticClass()))->SetMaterial(0, mat);
 	}
 	else {
