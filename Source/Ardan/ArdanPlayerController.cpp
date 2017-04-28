@@ -163,7 +163,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		elapsed = 0;
 		tickCount = 0;
 	}
-	if (!(bReplay || bReverse) && tenth >= 0.1) {
+	if (!(bReplay || bReverse) && tenth >= 1.0) {
 
 		tenth = 0;
 		FActorSpawnParameters SpawnInfo;
