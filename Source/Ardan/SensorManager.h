@@ -30,6 +30,8 @@ public:
 	void ChangeTimeline(int index);
 
 	bool DiffState(int index, float timeStamp);
+	void CopyOutState(TMap<FString, FSensorHistory>* sensorHistory);
+	void CopyInState(TMap<FString, FSensorHistory>* sensorHistory);
 
 private:
 	UWorld* world;

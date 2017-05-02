@@ -76,6 +76,10 @@ protected:
 	
 	void replayPressed();
 
+	void JumpForwardPressed();
+
+	void JumpBackwardPressed();
+
 
 	private:
 		SensorManager* sensorManager;

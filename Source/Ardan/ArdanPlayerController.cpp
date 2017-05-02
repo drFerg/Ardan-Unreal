@@ -98,6 +98,26 @@ void AArdanPlayerController::replayPressed() {
 	sensorManager->Replay();
 }
 
+void AArdanPlayerController::JumpForwardPressed() {
+	replayTime += 5.0;
+	curTime += 5.0;
+}
+
+void AArdanPlayerController::JumpBackwardPressed() {
+	replayTime -= 5.0;
+	curTime -= 5.0;
+	if (replayTime < 0) {
+		replayTime = 0;
+		curTime = 0;
+	}
+	actorManager->rewindCurrentMeshActors(false, curTime);
+	actorManager->rewindAllMeshActors(true, curTime);
+	actorManager->rewindCurrentPawnActors(curTime);
+	actorManager->rewindAllPawnActors(curTime);
+
+	sensorManager->RewindState(curTime);
+}
+
 
 void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
@@ -130,7 +150,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		curTime += DeltaTime;
 		if (bReplay) {
 			replayTime += DeltaTime;
-			//UE_LOG(LogNet, Log, TEXT("Replaying: %f"), replayTime);
+			UE_LOG(LogNet, Log, TEXT("Replaying: %f"), replayTime);
 			actorManager->replayCurrentActors(replayTime);
 			actorManager->replayAllActors(replayTime);
 			actorManager->replayCurrentPawnActors(replayTime);
@@ -157,7 +177,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	
 	tickCount += 1;
 	if (elapsed >= 1) {
-		UE_LOG(LogNet, Log, TEXT("TSTAMP: %f %f %f %d "), DeltaTime, 1/DeltaTime,
+		UE_LOG(LogNet, Log, TEXT("TSTAMP(%f): %f %f %f %d "), curTime, DeltaTime, 1/DeltaTime,
 					elapsed/tickCount,
 					tickCount);
 		elapsed = 0;
@@ -209,6 +229,7 @@ void AArdanPlayerController::SaveArdanState() {
 	save->currentHistory = *(actorManager->currentHistory);
 	save->currentHistory.histMap = actorManager->currentHistory->histMap;
 	save->currentHistory.name = FString("HELLO");
+	sensorManager->CopyOutState(&save->sensorHistory);
 	UE_LOG(LogNet, Log, TEXT("ARDAN Saved: %s (%d:%d)"), *save->SaveSlotName, 
 		actorManager->currentHistory->histMap.Num(), 
 		save->currentHistory.histMap.Num());
@@ -224,6 +245,7 @@ void AArdanPlayerController::LoadArdanState() {
 	UE_LOG(LogNet, Log, TEXT("ARDAN LOADED: %s (%d)"), *save->currentHistory.name, save->currentHistory.histMap.Num());
 	actorManager->FixReferences(actorManager->currentHistory);
 	actorManager->FixPawnReferences(actorManager->currentPawnHistory);
+	sensorManager->CopyInState(&save->sensorHistory);
 	replayPressed();
 
 }
@@ -259,6 +281,11 @@ void AArdanPlayerController::SetupInputComponent()
 
 	InputComponent->BindAction("Save", IE_Pressed, this, &AArdanPlayerController::SaveArdanState);
 	InputComponent->BindAction("Load", IE_Pressed, this, &AArdanPlayerController::LoadArdanState);
+	InputComponent->BindAction("TimeJumpForward", IE_Pressed, this, &AArdanPlayerController::JumpForwardPressed);
+	InputComponent->BindAction("TimeJumpBackward", IE_Pressed, this, &AArdanPlayerController::JumpBackwardPressed);
+
+
+	
 }
 
 void AArdanPlayerController::OnResetVR()
