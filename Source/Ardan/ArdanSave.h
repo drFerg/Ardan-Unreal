@@ -4,6 +4,7 @@
 
 #include "GameFramework/SaveGame.h"
 #include "ActorManager.h"
+#include "Sensor.h"
 #include "ArdanSave.generated.h"
 
 /**
@@ -29,5 +30,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = Basic)
 	FHistory currentPawnHistory;
+
+	UPROPERTY(VisibleAnywhere, Category = Basic)
+	TMap<FString, FSensorHistory> sensorHistory;
+
 	UArdanSave();
 };

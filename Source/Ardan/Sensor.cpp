@@ -248,19 +248,19 @@ void ASensor::ReceivePacket(uint8* pkt) {
 
 void ASensor::SnapshotState(float timeStamp) {
 	//if (!bstateBeenModified) return;
-	FSensorState* s = new FSensorState();
-	*s = *state;
-	s->timeStamp = timeStamp;
+	FSensorState s;
+	s = *state;
+	s.timeStamp = timeStamp;
 	history->timeline.Add(s);
-	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d %f"), state->R, state->G, state->B, s->timeStamp);
-	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), s->R, s->G, s->B);
+	//UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d %f"), state->R, state->G, state->B, s->timeStamp);
+	//UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), s->R, s->G, s->B);
 }
 
 void ASensor::RewindState(float requestTime) {
 	int i = history->timeline.Num() - 1;
-	FSensorState* s = history->timeline[i];
+	FSensorState* s = &(history->timeline[i]);
 	while (i > 0 && s->timeStamp > requestTime) {
-		s = history->timeline[--i];
+		s = &(history->timeline[--i]);
 	}
 	state = s;
 }
@@ -286,15 +286,15 @@ void ASensor::ChangeTimeline(int index) {
 FSensorState* ASensor::GetStatefromTimeline(FSensorHistory* h, float timeStamp) {
 	FSensorState* s = NULL;
 	//UE_LOG(LogNet, Log, TEXT("GSFT: (%d)(%d)"), h->index, h->timeline.Num());
-	while (h->index < h->timeline.Num() && h->timeline[h->index]->timeStamp <= timeStamp) {
+	while (h->index < h->timeline.Num() && h->timeline[h->index].timeStamp <= timeStamp) {
 
-		s = h->timeline[h->index];
+		s = &(h->timeline[h->index]);
 		//UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), s->R, s->G, s->B, s->timeStamp);
 
-		h->currentState = s;
+		h->currentState = *s;
 		h->index++;
 	}
-	return s ? s : h->currentState;
+	return s ? s : &(h->currentState);
 }
 
 FSensorState* ASensor::GetStatefromTimeline(int index, float timeStamp) {

@@ -109,3 +109,19 @@ bool SensorManager::DiffState(int index, float timeStamp) {
 	}
 	return equal;
 }
+
+void SensorManager::CopyOutState(TMap<FString, FSensorHistory>* sensorHistory) {
+	for (ASensor* sensor : sensors) {
+		sensorHistory->Add(sensor->GetName(), *sensor->history);
+	}
+}
+
+void SensorManager::CopyInState(TMap<FString, FSensorHistory>* sensorHistory) {
+	for (ASensor* sensor : sensors) {
+		FSensorHistory* h = sensorHistory->Find(sensor->GetName());
+		if (!h) continue;
+		sensor->history = h;
+		sensor->ResetTimeline();
+		sensor->ReflectState();
+	}
+}
