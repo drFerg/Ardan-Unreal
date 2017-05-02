@@ -120,8 +120,8 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 
 		actorManager->rewindCurrentMeshActors(false, curTime);
 		actorManager->rewindAllMeshActors(true, curTime);
-		actorManager->rewindCurrentPawnActors();
-		actorManager->rewindAllPawnActors();
+		actorManager->rewindCurrentPawnActors(curTime);
+		actorManager->rewindAllPawnActors(curTime);
 
 		sensorManager->RewindState(curTime);
 		return;
@@ -153,7 +153,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	actorManager->diff(NULL);
 	sensorManager->DiffState(0, curTime);
 
-	// /* Working out FPS */
+	/* Working out FPS */
 	
 	tickCount += 1;
 	if (elapsed >= 1) {
@@ -419,23 +419,23 @@ void AArdanPlayerController::speedFast() {
 }
 
 void AArdanPlayerController::ScrollUp() {
-	AArdanCharacter* const Pawn = (AArdanCharacter *) GetPawn();
+	AArdanCharacter* const pawn = (AArdanCharacter *) GetPawn();
 
-		if (Pawn){
-			FRotator rot = Pawn->GetCameraBoom()->RelativeRotation;
+		if (pawn){
+			FRotator rot = pawn->GetCameraBoom()->RelativeRotation;
 			rot.Add(5, 0, 0);
-			Pawn->GetCameraBoom()->SetWorldRotation(rot);
+			pawn->GetCameraBoom()->SetWorldRotation(rot);
 
 		}
 }
 
 void AArdanPlayerController::ScrollDown() {
-	AArdanCharacter* const Pawn = (AArdanCharacter *) GetPawn();
+	AArdanCharacter* const pawn = (AArdanCharacter *) GetPawn();
 
-		if (Pawn){
-			FRotator rot = Pawn->GetCameraBoom()->RelativeRotation;
+		if (pawn){
+			FRotator rot = pawn->GetCameraBoom()->RelativeRotation;
 			rot.Add(-5, 0, 0);
-			Pawn->GetCameraBoom()->SetWorldRotation(rot);
+			pawn->GetCameraBoom()->SetWorldRotation(rot);
 		}
 }
 

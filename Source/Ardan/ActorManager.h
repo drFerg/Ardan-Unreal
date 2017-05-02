@@ -126,12 +126,12 @@ public:
 	void ResetTimelines();
 
 	void rewindMeshActors(FHistory *history, bool freeze, float timeStamp);
-	void rewindPawnActors(FHistory *history);
+	void rewindPawnActors(FHistory *history, float timeStamp);
 
 	void rewindCurrentMeshActors(bool freeze, float timeStamp);
-	void rewindCurrentPawnActors();
+	void rewindCurrentPawnActors(float timeStamp);
 	void rewindAllMeshActors(bool freeze, float timeStamp);
-	void rewindAllPawnActors();
+	void rewindAllPawnActors(float timeStamp);
 
 	void replayActors(FHistory *history, float timeStamp);
 	void replayPawnActors(FHistory * history, float timeStamp);
