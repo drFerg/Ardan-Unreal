@@ -34,7 +34,9 @@ TMap<AActor*, FVector> inMotionPos; /* Contains actor as key and old location */
 
 void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 														 class AActor* otherActor) {
-	/* Start motion tracking the overlapping otherActor */
+	/* If in replay ignore overlaps - recorded state will already reflect these */
+	if (bReplayMode) return;
+	/* Start motion tracking the overlapping otherActor (in tick) */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
 	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	SetLed(1, 1, 1);
@@ -58,6 +60,8 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 
 void ASensor::OnEndOverlap(class AActor* OverlappedActor,
 													 class AActor* otherActor) {
+	/* If in replay ignore overlaps - recorded state will already reflect these */
+	if (bReplayMode) return;
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
 	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	SetLed(0,0,0);
@@ -186,6 +190,9 @@ void ASensor::Tick(float DeltaTime) {
 	}
 }
 
+void ASensor::SetReplayMode(bool on) {
+	bReplayMode = on;
+}
 void ASensor::Led(int32 led, bool on) {
 	if (led > 3 && led < 0) return;
 //UE_LOG(LogNet, Log, TEXT("Node: %s"), *(SensorActor->GetName()))

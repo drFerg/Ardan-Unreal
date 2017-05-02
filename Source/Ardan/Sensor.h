@@ -50,33 +50,33 @@ public:
 
 	// Called every frame
 	virtual void Tick(float DeltaSeconds) override;
+
 	void ReceivePacket(uint8 * pkt);
 
 	void SnapshotState(float timeStamp);
-
 	void RewindState(float timeStamp);
-
 	void ReplayState(float timeStamp);
-
-	void ChangeTimeline(int index);
-
-	FSensorState * GetStatefromTimeline(FSensorHistory * h, float timeStamp);
-
-	FSensorState * GetStatefromTimeline(int index, float timeStamp);
-
-	bool StateIsEqual(FSensorState* a, FSensorState* b);
-
 	void ReflectState();
+	void SetReplayMode(bool on);
 
 	void ResetTimeline();
-
 	void NewTimeline();
+	void ChangeTimeline(int index);
+	FSensorState * GetStatefromTimeline(FSensorHistory * h, float timeStamp);
+	FSensorState * GetStatefromTimeline(int index, float timeStamp);
+
+
 	void ColourSensor(int type);
 	bool DiffCurrentState(int stateIndex, float timeStamp);
+	bool StateIsEqual(FSensorState* a, FSensorState* b);
+
 
 	void Led(int32 led, bool on);
 	void SetLed(uint8 R, uint8 G, uint8 B);
+
 	FVector GetSensorLocation();
+
+	/* Functions for PIR sensor */
 	UFUNCTION()
 	void OnBeginOverlap(class AActor* OverlappedActor, class AActor* OtherActor);
 	UFUNCTION()
@@ -116,7 +116,7 @@ private:
 	FSensorState* state;
 	FSensorHistory* history;
 	TArray<FSensorHistory*> histories;
-
+	bool bReplayMode = false;
 	TArray<USpotLightComponent*> Leds;
 	ATriggerBase* tb;
 	ISocketSubsystem* sockSubSystem;

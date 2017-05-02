@@ -95,7 +95,7 @@ void AArdanPlayerController::replayPressed() {
 	curTime = 0;
 	replayTime = 0;
 	actorManager->ResetTimelines();
-	sensorManager->ResetTimeline();
+	sensorManager->Replay();
 }
 
 
