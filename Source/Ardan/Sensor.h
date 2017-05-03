@@ -156,7 +156,4 @@ private:
 	float activeTimer = 0;
 	void sendLocationUpdate();
 	bool bstateBeenModified = false;
-
-
-
 };
