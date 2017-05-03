@@ -21,20 +21,44 @@
 
 USTRUCT()
 struct FSensorState {
-	GENERATED_BODY()
-	unsigned int R : 1;
-	unsigned int G : 1;
-	unsigned int B : 1;
+	GENERATED_USTRUCT_BODY();
+	UPROPERTY(SaveGame)
+	unsigned int R;
+	UPROPERTY(SaveGame)
+	unsigned int G;
+	UPROPERTY(SaveGame)
+	unsigned int B;
+	UPROPERTY(SaveGame)
 	float timeStamp;
 };
 
 USTRUCT()
 struct FSensorHistory {
-	GENERATED_BODY()
-	TArray<FSensorState*> timeline;
+	GENERATED_USTRUCT_BODY();
+	UPROPERTY(SaveGame)
+	TArray<FSensorState> timeline;
+	UPROPERTY(SaveGame)
 	int index = 0;
 	FSensorState* currentState;
 };
+
+
+FORCEINLINE FArchive &operator <<(FArchive &Ar, FSensorHistory& hist)
+{
+	Ar << hist.timeline;
+	Ar << hist.index;
+	//Ar << hist.currentState;
+	return Ar;
+}
+
+FORCEINLINE FArchive &operator <<(FArchive &Ar, FSensorState& hist)
+{
+  Ar << hist.R;
+	Ar << hist.G;
+	Ar << hist.B;
+	Ar << hist.timeStamp;
+	return Ar;
+}
 
 UCLASS()
 class ARDAN_API ASensor : public AActor
@@ -50,33 +74,33 @@ public:
 
 	// Called every frame
 	virtual void Tick(float DeltaSeconds) override;
+
 	void ReceivePacket(uint8 * pkt);
 
 	void SnapshotState(float timeStamp);
-
 	void RewindState(float timeStamp);
-
 	void ReplayState(float timeStamp);
-
-	void ChangeTimeline(int index);
-
-	FSensorState * GetStatefromTimeline(FSensorHistory * h, float timeStamp);
-
-	FSensorState * GetStatefromTimeline(int index, float timeStamp);
-
-	bool StateIsEqual(FSensorState* a, FSensorState* b);
-
 	void ReflectState();
+	void SetReplayMode(bool on);
 
 	void ResetTimeline();
-
 	void NewTimeline();
+	void ChangeTimeline(int index);
+	FSensorState * GetStatefromTimeline(FSensorHistory * h, float timeStamp);
+	FSensorState * GetStatefromTimeline(int index, float timeStamp);
+
+
 	void ColourSensor(int type);
 	bool DiffCurrentState(int stateIndex, float timeStamp);
+	bool StateIsEqual(FSensorState& a, FSensorState& b);
+
 
 	void Led(int32 led, bool on);
 	void SetLed(uint8 R, uint8 G, uint8 B);
+
 	FVector GetSensorLocation();
+
+	/* Functions for PIR sensor */
 	UFUNCTION()
 	void OnBeginOverlap(class AActor* OverlappedActor, class AActor* OtherActor);
 	UFUNCTION()
@@ -111,12 +135,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Network)
 	FString address = TEXT("127.0.0.1");
 
+	FSensorHistory* history;
 private:
 	UStaticMeshComponent* mesh;
-	FSensorState* state;
-	FSensorHistory* history;
+	UPROPERTY()
+	FSensorState state;
 	TArray<FSensorHistory*> histories;
-
+	bool bReplayMode = false;
 	TArray<USpotLightComponent*> Leds;
 	ATriggerBase* tb;
 	ISocketSubsystem* sockSubSystem;
@@ -131,7 +156,4 @@ private:
 	float activeTimer = 0;
 	void sendLocationUpdate();
 	bool bstateBeenModified = false;
-
-
-
 };

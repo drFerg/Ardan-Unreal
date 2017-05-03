@@ -34,7 +34,9 @@ TMap<AActor*, FVector> inMotionPos; /* Contains actor as key and old location */
 
 void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 														 class AActor* otherActor) {
-	/* Start motion tracking the overlapping otherActor */
+	/* If in replay ignore overlaps - recorded state will already reflect these */
+	if (bReplayMode) return;
+	/* Start motion tracking the overlapping otherActor (in tick) */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
 	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	SetLed(1, 1, 1);
@@ -58,6 +60,8 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 
 void ASensor::OnEndOverlap(class AActor* OverlappedActor,
 													 class AActor* otherActor) {
+	/* If in replay ignore overlaps - recorded state will already reflect these */
+	if (bReplayMode) return;
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
 	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	SetLed(0,0,0);
@@ -156,10 +160,10 @@ void ASensor::BeginPlay() {
 	}
 
 	history = new FSensorHistory();
-	state = new FSensorState();
-	state->R = 0;
-	state->G = 0;
-	state->B = 0;
+	//state = new FSensorState();
+	state.R = 0;
+	state.G = 0;
+	state.B = 0;
 	SnapshotState(0.0);
 
 	prevLocation = this->GetActorLocation();
@@ -186,6 +190,9 @@ void ASensor::Tick(float DeltaTime) {
 	}
 }
 
+void ASensor::SetReplayMode(bool on) {
+	bReplayMode = on;
+}
 void ASensor::Led(int32 led, bool on) {
 	if (led > 3 && led < 0) return;
 //UE_LOG(LogNet, Log, TEXT("Node: %s"), *(SensorActor->GetName()))
@@ -195,9 +202,9 @@ void ASensor::Led(int32 led, bool on) {
 
 void ASensor::SetLed(uint8 R, uint8 G, uint8 B) {
 	//UE_LOG(LogNet, Log, TEXT("Node: %s"), *(actor->GetName()))
-	state->R = R;
-	state->G = G;
-	state->B = B;
+	state.R = R;
+	state.G = G;
+	state.B = B;
 	Leds[0]->SetIntensity(R ? LEDON : LEDOFF);
 	Leds[1]->SetIntensity(G ? LEDON : LEDOFF);
 	Leds[2]->SetIntensity(B ? LEDON : LEDOFF);
@@ -241,21 +248,21 @@ void ASensor::ReceivePacket(uint8* pkt) {
 
 void ASensor::SnapshotState(float timeStamp) {
 	//if (!bstateBeenModified) return;
-	FSensorState* s = new FSensorState();
-	*s = *state;
-	s->timeStamp = timeStamp;
+	FSensorState s;
+	s = state;
+	s.timeStamp = timeStamp;
 	history->timeline.Add(s);
-	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d %f"), state->R, state->G, state->B, s->timeStamp);
-	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), s->R, s->G, s->B);
+	//UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d %f"), state->R, state->G, state->B, s->timeStamp);
+	//UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), s->R, s->G, s->B);
 }
 
 void ASensor::RewindState(float requestTime) {
 	int i = history->timeline.Num() - 1;
-	FSensorState* s = history->timeline[i];
+	FSensorState* s = &(history->timeline[i]);
 	while (i > 0 && s->timeStamp > requestTime) {
-		s = history->timeline[--i];
+		s = &(history->timeline[--i]);
 	}
-	state = s;
+	state = *s;
 }
 
 
@@ -266,7 +273,7 @@ void ASensor::ReplayState(float timeStamp) {
 	//	s = history->timeline[++i];
 	//}
 	//state = s;
-	state = GetStatefromTimeline(history, timeStamp);
+	state = *GetStatefromTimeline(history, timeStamp);
 }
 
 void ASensor::ChangeTimeline(int index) {
@@ -278,11 +285,11 @@ void ASensor::ChangeTimeline(int index) {
 
 FSensorState* ASensor::GetStatefromTimeline(FSensorHistory* h, float timeStamp) {
 	FSensorState* s = NULL;
-	UE_LOG(LogNet, Log, TEXT("GSFT: (%d)(%d)"), h->index, h->timeline.Num());
-	while (h->index < h->timeline.Num() && h->timeline[h->index]->timeStamp <= timeStamp) {
+	//UE_LOG(LogNet, Log, TEXT("GSFT: (%d)(%d)"), h->index, h->timeline.Num());
+	while (h->index < h->timeline.Num() && h->timeline[h->index].timeStamp <= timeStamp) {
 
-		s = h->timeline[h->index];
-		UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), s->R, s->G, s->B, s->timeStamp);
+		s = &(h->timeline[h->index]);
+		//UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), s->R, s->G, s->B, s->timeStamp);
 
 		h->currentState = s;
 		h->index++;
@@ -294,26 +301,29 @@ FSensorState* ASensor::GetStatefromTimeline(int index, float timeStamp) {
 	return GetStatefromTimeline(histories[index], timeStamp);
 }
 
-bool ASensor::StateIsEqual(FSensorState* a, FSensorState* b) {
-	return (a->R == b->R && a->G == b->G && a->B == a->B);
+bool ASensor::StateIsEqual(FSensorState& a, FSensorState& b) {
+	return (a.R == b.R && a.G == b.G && a.B == a.B);
 }
 
 bool ASensor::DiffCurrentState(int stateIndex, float timeStamp) {
-	return StateIsEqual(state, GetStatefromTimeline(stateIndex, timeStamp));
+	FSensorState* s = GetStatefromTimeline(stateIndex, timeStamp);
+	UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), state.R, state.G, state.B, state.timeStamp);
+	UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), s->R, s->G, s->B, s->timeStamp);
+	return StateIsEqual(state, *s);
 }
 
 /*Reflects the stored state on the virtual object*/
 void ASensor::ReflectState() {
-	SetLed(state->R, state->G, state->B);
-	UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), state->R, state->G, state->B);
+	SetLed(state.R, state.G, state.B);
+	//UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), state->R, state->G, state->B);
 }
 
 void ASensor::ResetTimeline() {
 	/* State has already been stored in history */
-	delete state;
+	//delete state;
 	history->index = 0;
 	state = history->timeline[0];
-	history->currentState = state;
+	history->currentState = &state;
 }
 
 void ASensor::NewTimeline() {

@@ -16,7 +16,7 @@ public:
 	void FindSensors();
 
 	void ReceivePacket(uint8 * pkt);
-
+	void Replay();
 	void SnapshotState(float timeStamp);
 
 	void RewindState(float timeStamp);
@@ -30,12 +30,15 @@ public:
 	void ChangeTimeline(int index);
 
 	bool DiffState(int index, float timeStamp);
+	void CopyOutState(TMap<FString, FSensorHistory>* sensorHistory);
+	void CopyInState(TMap<FString, FSensorHistory>* sensorHistory);
 
 private:
 	UWorld* world;
 	TArray<ASensor*> sensors;
 	TMap<int, ASensor*> sensorTable;
 	bool bHasHistory = false;
+
 	FColor colours[12] = { FColor(255, 0, 0),
 		FColor(0, 255, 0),
 		FColor(0, 0, 255),

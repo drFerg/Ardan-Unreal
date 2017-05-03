@@ -44,6 +44,14 @@ void SensorManager::ReceivePacket(uint8* pkt) {
 	}
 }
 
+void SensorManager::Replay() {
+	for (ASensor* sensor : sensors) {
+		sensor->ResetTimeline();
+		sensor->ReflectState();
+		sensor->SetReplayMode(true);
+	}
+}
+
 void SensorManager::SnapshotState(float timeStamp) {
 	for (ASensor* sensor : sensors) {
 		sensor->SnapshotState(timeStamp);
@@ -71,6 +79,7 @@ void SensorManager::NewTimeline() {
 		sensor->NewTimeline();
 		sensor->SnapshotState(0.0);
 		sensor->ReflectState();
+		sensor->SetReplayMode(false);
 	}
 }
 
@@ -99,4 +108,20 @@ bool SensorManager::DiffState(int index, float timeStamp) {
 		else sensor->ColourSensor(0);
 	}
 	return equal;
+}
+
+void SensorManager::CopyOutState(TMap<FString, FSensorHistory>* sensorHistory) {
+	for (ASensor* sensor : sensors) {
+		sensorHistory->Add(sensor->GetName(), *sensor->history);
+	}
+}
+
+void SensorManager::CopyInState(TMap<FString, FSensorHistory>* sensorHistory) {
+	for (ASensor* sensor : sensors) {
+		FSensorHistory* h = sensorHistory->Find(sensor->GetName());
+		if (!h) continue;
+		sensor->history = h;
+		sensor->ResetTimeline();
+		sensor->ReflectState();
+	}
 }
