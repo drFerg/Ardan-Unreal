@@ -47,7 +47,7 @@ FORCEINLINE FArchive &operator <<(FArchive &Ar, FSensorHistory& hist)
 {
 	Ar << hist.timeline;
 	Ar << hist.index;
-	Ar << hist.currentState;
+	//Ar << hist.currentState;
 	return Ar;
 }
 
@@ -92,7 +92,7 @@ public:
 
 	void ColourSensor(int type);
 	bool DiffCurrentState(int stateIndex, float timeStamp);
-	bool StateIsEqual(FSensorState* a, FSensorState* b);
+	bool StateIsEqual(FSensorState& a, FSensorState& b);
 
 
 	void Led(int32 led, bool on);
@@ -138,8 +138,8 @@ public:
 	FSensorHistory* history;
 private:
 	UStaticMeshComponent* mesh;
-	FSensorState* state;
-	
+	UPROPERTY()
+	FSensorState state;
 	TArray<FSensorHistory*> histories;
 	bool bReplayMode = false;
 	TArray<USpotLightComponent*> Leds;
