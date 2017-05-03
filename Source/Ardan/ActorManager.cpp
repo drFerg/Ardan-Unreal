@@ -4,6 +4,7 @@
 #include "ArdanUtilities.h"
 #include "EngineUtils.h"
 #include "UObjectGlobals.h"
+#include "CameraPawn.h"
 #include "Engine/StaticMeshActor.h"
 
 UActorManager::UActorManager() {
@@ -265,6 +266,7 @@ void UActorManager::initHist() {
 
 	for (TActorIterator<APawn> ActorItr(world); ActorItr; ++ActorItr) {
 		APawn *actor = *ActorItr;
+		if (actor->GetClass() == ACameraPawn::StaticClass()) continue;
 		UE_LOG(LogNet, Log, TEXT("A: %s"), *actor->GetName());
 		// Set up actorInfo object to record actor history
 		FObjectInfo actorInfo;
