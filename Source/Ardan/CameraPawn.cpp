@@ -70,7 +70,7 @@ void ACameraPawn::Tick(float DeltaTime)
 		if (!MovementInput.IsZero())
 		{
 			//Scale our movement input axis values by 100 units per second
-			MovementInput = MovementInput.SafeNormal() * (bSpeedUp ? 600.0f : 300.0f);
+			MovementInput = MovementInput.SafeNormal() * (bSpeedUp ? fastMoveSpeed : moveSpeed);
 			FVector NewLocation = GetActorLocation();
 			NewLocation += GetActorForwardVector() * MovementInput.X * DeltaTime;
 			NewLocation += GetActorRightVector() * MovementInput.Y * DeltaTime;

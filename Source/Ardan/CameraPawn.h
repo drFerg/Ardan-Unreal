@@ -21,6 +21,10 @@ protected:
 	USpringArmComponent* OurCameraSpringArm;
 	UCameraComponent* OurCamera;
 
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float moveSpeed = 750.0f;
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float fastMoveSpeed = 1500.0f;
 	//Input variables
 	FVector MovementInput;
 	FVector2D CameraInput;
