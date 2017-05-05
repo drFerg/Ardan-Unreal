@@ -201,7 +201,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		}
 		if (ts != NULL) {
 			timeSpheres.Push(ts);
-		} else UE_LOG(LogNet, Log, TEXT("NOOOOOOOOOOOOOOO"));
+		} else UE_LOG(LogNet, Log, TEXT("Noo"));
 	}
 
 	// keep updating the destination every tick while desired
@@ -242,7 +242,7 @@ void AArdanPlayerController::LoadArdanState() {
 	FString PlayerNameToDisplay = save->PlayerName;
 	*actorManager->currentHistory = save->currentHistory;
 	*actorManager->currentPawnHistory = save->currentPawnHistory;
-	UE_LOG(LogNet, Log, TEXT("ARDAN LOADED: %s (%d)"), *save->currentHistory.name, save->currentHistory.histMap.Num());
+	UE_LOG(LogNet, Log, TEXT("ARDAN Loaded: %s (%d)"), *save->currentHistory.name, save->currentHistory.histMap.Num());
 	actorManager->FixReferences(actorManager->currentHistory);
 	actorManager->FixPawnReferences(actorManager->currentPawnHistory);
 	sensorManager->CopyInState(&save->sensorHistory);

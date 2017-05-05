@@ -28,7 +28,9 @@ void SensorManager::FindSensors() {
 }
 
 void SensorManager::ReceivePacket(uint8* pkt) {
-	ASensor* sensor = *sensorTable.Find(pkt[1]);
+	ASensor **s = sensorTable.Find(pkt[1]);
+	if (s == NULL) return;
+	ASensor* sensor = *s;
 	if (sensor == NULL) return;
 	sensor->ReceivePacket(pkt);
 	if (pkt[0] == RADIO_PKT) {
@@ -36,7 +38,9 @@ void SensorManager::ReceivePacket(uint8* pkt) {
 		FVector sourceLoc = sensor->GetSensorLocation();
 		DrawDebugCircle(world, sourceLoc, 50.0, 360, colours[pkt[1] % 12], false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
 		for (int i = 0; i < pkt[2]; i++) {
-			ASensor* sensor2 = *sensorTable.Find(pkt[3 + i]);
+			s = sensorTable.Find(pkt[3 + i]);
+			if (s == NULL) continue;
+			ASensor* sensor2 = *s;
 			if (sensor2 == NULL) continue;
 			DrawDebugDirectionalArrow(world, sourceLoc, sensor2->GetSensorLocation(),
 				500.0, colours[pkt[1] % 12], false, 0.5, 0, 5.0);

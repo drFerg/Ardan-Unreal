@@ -111,9 +111,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
 	FString SensorName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
-	AActor* SensorActor;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
 	AStaticMeshActor* PIRSensor;
 
