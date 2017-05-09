@@ -5,10 +5,12 @@
 
 #include "flatbuffers/flatbuffers.h"
 
-
 namespace UnrealCoojaMsg {
 
 struct Vec3;
+
+struct RadioDuty;
+
 struct Message;
 
 enum MsgType {
@@ -20,11 +22,14 @@ enum MsgType {
   MsgType_RESUME = 6,
   MsgType_SPEED_NORM = 7,
   MsgType_SPEED_SLOW = 8,
-  MsgType_SPEED_FAST = 9
+  MsgType_SPEED_FAST = 9,
+  MsgType_RADIO_DUTY = 10,
+  MsgType_MIN = MsgType_LED,
+  MsgType_MAX = MsgType_RADIO_DUTY
 };
 
 inline const char **EnumNamesMsgType() {
-  static const char *names[] = { "LED", "LOCATION", "RADIO", "PIR", "PAUSE", "RESUME", "SPEED_NORM", "SPEED_SLOW", "SPEED_FAST", nullptr };
+  static const char *names[] = { "LED", "LOCATION", "RADIO", "PIR", "PAUSE", "RESUME", "SPEED_NORM", "SPEED_SLOW", "SPEED_FAST", "RADIO_DUTY", nullptr };
   return names;
 }
 
@@ -46,20 +51,42 @@ MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
 };
 STRUCT_END(Vec3, 12);
 
+MANUALLY_ALIGNED_STRUCT(8) RadioDuty FLATBUFFERS_FINAL_CLASS {
+ private:
+  double radioOnRatio_;
+  double radioTxRatio_;
+  double radioRxRatio_;
+  double radioInterferedRatio_;
+
+ public:
+  RadioDuty(double _radioOnRatio, double _radioTxRatio, double _radioRxRatio, double _radioInterferedRatio)
+    : radioOnRatio_(flatbuffers::EndianScalar(_radioOnRatio)), radioTxRatio_(flatbuffers::EndianScalar(_radioTxRatio)), radioRxRatio_(flatbuffers::EndianScalar(_radioRxRatio)), radioInterferedRatio_(flatbuffers::EndianScalar(_radioInterferedRatio)) { }
+
+  double radioOnRatio() const { return flatbuffers::EndianScalar(radioOnRatio_); }
+  double radioTxRatio() const { return flatbuffers::EndianScalar(radioTxRatio_); }
+  double radioRxRatio() const { return flatbuffers::EndianScalar(radioRxRatio_); }
+  double radioInterferedRatio() const { return flatbuffers::EndianScalar(radioInterferedRatio_); }
+};
+STRUCT_END(RadioDuty, 32);
+
 struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ID = 4,
     VT_TYPE = 6,
     VT_LOCATION = 8,
+    VT_NODE = 10
   };
   int32_t id() const { return GetField<int32_t>(VT_ID, 0); }
   int32_t type() const { return GetField<int32_t>(VT_TYPE, 0); }
   const Vec3 *location() const { return GetStruct<const Vec3 *>(VT_LOCATION); }
+  const flatbuffers::Vector<const RadioDuty *> *node() const { return GetPointer<const flatbuffers::Vector<const RadioDuty *> *>(VT_NODE); }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
            VerifyField<int32_t>(verifier, VT_TYPE) &&
            VerifyField<Vec3>(verifier, VT_LOCATION) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_NODE) &&
+           verifier.Verify(node()) &&
            verifier.EndTable();
   }
 };
@@ -70,10 +97,11 @@ struct MessageBuilder {
   void add_id(int32_t id) { fbb_.AddElement<int32_t>(Message::VT_ID, id, 0); }
   void add_type(int32_t type) { fbb_.AddElement<int32_t>(Message::VT_TYPE, type, 0); }
   void add_location(const Vec3 *location) { fbb_.AddStruct(Message::VT_LOCATION, location); }
+  void add_node(flatbuffers::Offset<flatbuffers::Vector<const RadioDuty *>> node) { fbb_.AddOffset(Message::VT_NODE, node); }
   MessageBuilder(flatbuffers::FlatBufferBuilder &_fbb) : fbb_(_fbb) { start_ = fbb_.StartTable(); }
   MessageBuilder &operator=(const MessageBuilder &);
   flatbuffers::Offset<Message> Finish() {
-    auto o = flatbuffers::Offset<Message>(fbb_.EndTable(start_, 3));
+    auto o = flatbuffers::Offset<Message>(fbb_.EndTable(start_, 4));
     return o;
   }
 };
@@ -81,8 +109,10 @@ struct MessageBuilder {
 inline flatbuffers::Offset<Message> CreateMessage(flatbuffers::FlatBufferBuilder &_fbb,
    int32_t id = 0,
    int32_t type = 0,
-   const Vec3 *location = 0) {
+   const Vec3 *location = 0,
+   flatbuffers::Offset<flatbuffers::Vector<const RadioDuty *>> node = 0) {
   MessageBuilder builder_(_fbb);
+  builder_.add_node(node);
   builder_.add_location(location);
   builder_.add_type(type);
   builder_.add_id(id);

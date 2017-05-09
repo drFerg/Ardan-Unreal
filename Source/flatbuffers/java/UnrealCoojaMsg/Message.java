@@ -17,11 +17,16 @@ public final class Message extends Table {
   public int type() { int o = __offset(6); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
   public Vec3 location() { return location(new Vec3()); }
   public Vec3 location(Vec3 obj) { int o = __offset(8); return o != 0 ? obj.__init(o + bb_pos, bb) : null; }
+  public RadioDuty node(int j) { return node(new RadioDuty(), j); }
+  public RadioDuty node(RadioDuty obj, int j) { int o = __offset(10); return o != 0 ? obj.__init(__vector(o) + j * 32, bb) : null; }
+  public int nodeLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
 
-  public static void startMessage(FlatBufferBuilder builder) { builder.startObject(3); }
+  public static void startMessage(FlatBufferBuilder builder) { builder.startObject(4); }
   public static void addId(FlatBufferBuilder builder, int id) { builder.addInt(0, id, 0); }
   public static void addType(FlatBufferBuilder builder, int type) { builder.addInt(1, type, 0); }
   public static void addLocation(FlatBufferBuilder builder, int locationOffset) { builder.addStruct(2, locationOffset, 0); }
+  public static void addNode(FlatBufferBuilder builder, int nodeOffset) { builder.addOffset(3, nodeOffset, 0); }
+  public static void startNodeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(32, numElems, 8); }
   public static int endMessage(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

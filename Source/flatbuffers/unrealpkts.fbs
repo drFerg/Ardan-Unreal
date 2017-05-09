@@ -2,7 +2,7 @@ namespace UnrealCoojaMsg;
 
 
 enum MsgType : byte { LED = 1, LOCATION, RADIO, PIR, PAUSE, RESUME, SPEED_NORM,
-                      SPEED_SLOW, SPEED_FAST }
+                      SPEED_SLOW, SPEED_FAST, RADIO_DUTY }
 
 struct Vec3 {
   x:float;
@@ -10,9 +10,16 @@ struct Vec3 {
   z:float;
 }
 
+struct RadioDuty {
+  radioOnRatio:double;
+  radioTxRatio:double;
+  radioRxRatio:double;
+  radioInterferedRatio:double;
+}
 
 table Message {
   id:int;
   type:int;
   location:Vec3;
+  node:[RadioDuty];
 }
