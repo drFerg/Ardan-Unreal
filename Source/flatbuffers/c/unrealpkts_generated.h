@@ -122,7 +122,8 @@ struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_TYPE = 6,
     VT_LOCATION = 8,
     VT_NODE = 10,
-    VT_RCVD = 12
+    VT_RCVD = 12,
+    VT_LED = 14
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -139,6 +140,9 @@ struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<int32_t> *rcvd() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_RCVD);
   }
+  const flatbuffers::Vector<int32_t> *led() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_LED);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
@@ -148,6 +152,8 @@ struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.Verify(node()) &&
            VerifyOffset(verifier, VT_RCVD) &&
            verifier.Verify(rcvd()) &&
+           VerifyOffset(verifier, VT_LED) &&
+           verifier.Verify(led()) &&
            verifier.EndTable();
   }
 };
@@ -170,13 +176,16 @@ struct MessageBuilder {
   void add_rcvd(flatbuffers::Offset<flatbuffers::Vector<int32_t>> rcvd) {
     fbb_.AddOffset(Message::VT_RCVD, rcvd);
   }
+  void add_led(flatbuffers::Offset<flatbuffers::Vector<int32_t>> led) {
+    fbb_.AddOffset(Message::VT_LED, led);
+  }
   MessageBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   MessageBuilder &operator=(const MessageBuilder &);
   flatbuffers::Offset<Message> Finish() {
-    const auto end = fbb_.EndTable(start_, 5);
+    const auto end = fbb_.EndTable(start_, 6);
     auto o = flatbuffers::Offset<Message>(end);
     return o;
   }
@@ -188,8 +197,10 @@ inline flatbuffers::Offset<Message> CreateMessage(
     int32_t type = 0,
     const Vec3 *location = 0,
     flatbuffers::Offset<flatbuffers::Vector<const RadioDuty *>> node = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> rcvd = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> rcvd = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> led = 0) {
   MessageBuilder builder_(_fbb);
+  builder_.add_led(led);
   builder_.add_rcvd(rcvd);
   builder_.add_node(node);
   builder_.add_location(location);
@@ -204,14 +215,16 @@ inline flatbuffers::Offset<Message> CreateMessageDirect(
     int32_t type = 0,
     const Vec3 *location = 0,
     const std::vector<const RadioDuty *> *node = nullptr,
-    const std::vector<int32_t> *rcvd = nullptr) {
+    const std::vector<int32_t> *rcvd = nullptr,
+    const std::vector<int32_t> *led = nullptr) {
   return UnrealCoojaMsg::CreateMessage(
       _fbb,
       id,
       type,
       location,
       node ? _fbb.CreateVector<const RadioDuty *>(*node) : 0,
-      rcvd ? _fbb.CreateVector<int32_t>(*rcvd) : 0);
+      rcvd ? _fbb.CreateVector<int32_t>(*rcvd) : 0,
+      led ? _fbb.CreateVector<int32_t>(*led) : 0);
 }
 
 inline const UnrealCoojaMsg::Message *GetMessage(const void *buf) {
