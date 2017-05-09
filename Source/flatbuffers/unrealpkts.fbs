@@ -22,6 +22,7 @@ table Message {
   type:int;
   location:Vec3;
   node:[RadioDuty];
+  rcvd:[int];
 }
 
 
