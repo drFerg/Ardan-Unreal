@@ -6,6 +6,10 @@
 #include "EngineUtils.h"
 #include "DrawDebugHelpers.h"
 #include "RunnableConnection.h"
+#include <vector>
+#include "flatbuffers/c/unrealpkts_generated.h"
+
+using namespace UnrealCoojaMsg; 
 
 SensorManager::SensorManager(UWorld* w) {
 	world = w;
@@ -28,25 +32,37 @@ void SensorManager::FindSensors() {
 }
 
 void SensorManager::ReceivePacket(uint8* pkt) {
-	ASensor **s = sensorTable.Find(pkt[1]);
-	if (s == NULL) return;
-	ASensor* sensor = *s;
-	if (sensor == NULL) return;
-	sensor->ReceivePacket(pkt);
-	if (pkt[0] == RADIO_PKT) {
-		/* Display radio event */
+	auto msg = GetMessage(pkt);
+	/* Display radio event */
+	if (msg->type() == MsgType_RADIO) {
+		ASensor **s = sensorTable.Find(msg->id());
+		if (s == NULL) return;
+		ASensor* sensor = *s;
+		if (sensor == NULL) return;
 		FVector sourceLoc = sensor->GetSensorLocation();
-		DrawDebugCircle(world, sourceLoc, 50.0, 360, colours[pkt[1] % 12], false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
-		for (int i = 0; i < pkt[2]; i++) {
-			s = sensorTable.Find(pkt[3 + i]);
+		DrawDebugCircle(world, sourceLoc, 50.0, 360, colours[msg->id() % 12], false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
+		auto rcvd = msg->rcvd();
+		for (size_t i = 0; i < rcvd->Length(); i++) {
+			s = sensorTable.Find(rcvd->Get(i));
 			if (s == NULL) continue;
 			ASensor* sensor2 = *s;
 			if (sensor2 == NULL) continue;
 			DrawDebugDirectionalArrow(world, sourceLoc, sensor2->GetSensorLocation(),
-				500.0, colours[pkt[1] % 12], false, 0.5, 0, 5.0);
+				500.0, colours[msg->id() % 12], false, 0.5, 0, 5.0);
+			}
 		}
+	else {
+		ASensor **s = sensorTable.Find(msg->id());
+		if (s == NULL) return;
+		ASensor* sensor = *s;
+		if (sensor == NULL) return;
+		sensor->ReceivePacket(msg);
 	}
-}
+
+
+	}
+	
+
 
 void SensorManager::Replay() {
 	for (ASensor* sensor : sensors) {

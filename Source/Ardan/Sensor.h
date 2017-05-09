@@ -15,7 +15,7 @@
 #include "Engine/Channel.h"
 
 #include <flatbuffers/flatbuffers.h>
-#include "unrealpkts_generated.h"
+#include "flatbuffers/c/unrealpkts_generated.h"
 
 #include "Sensor.generated.h"
 
@@ -28,6 +28,8 @@ struct FSensorState {
 	unsigned int G;
 	UPROPERTY(SaveGame)
 	unsigned int B;
+	UPROPERTY(SaveGame)
+	double radioDuty;
 	UPROPERTY(SaveGame)
 	float timeStamp;
 };
@@ -56,6 +58,7 @@ FORCEINLINE FArchive &operator <<(FArchive &Ar, FSensorState& hist)
   Ar << hist.R;
 	Ar << hist.G;
 	Ar << hist.B;
+	Ar << hist.radioDuty;
 	Ar << hist.timeStamp;
 	return Ar;
 }
@@ -75,7 +78,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaSeconds) override;
 
-	void ReceivePacket(uint8 * pkt);
+	void ReceivePacket(const UnrealCoojaMsg::Message* msg);
 
 	void SnapshotState(float timeStamp);
 	void RewindState(float timeStamp);

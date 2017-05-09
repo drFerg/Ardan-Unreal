@@ -10,7 +10,7 @@
 #include "Sensor.h"
 #include "TimeSphere.h"
 
-#include "unrealpkts_generated.h"
+#include "flatbuffers/c/unrealpkts_generated.h"
 
 #include "GameFramework/PlayerController.h"
 #include "ArdanGhostController.generated.h"

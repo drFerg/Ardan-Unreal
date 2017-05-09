@@ -11,7 +11,7 @@
 #include "SensorManager.h"
 #include "TimeSphere.h"
 
-#include "unrealpkts_generated.h"
+#include "flatbuffers/c/unrealpkts_generated.h"
 #include "ActorManager.h"
 #include "GameFramework/PlayerController.h"
 #include "ArdanPlayerController.generated.h"

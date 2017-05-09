@@ -14,11 +14,10 @@
 #include <Vector.h>
 #include <Map.h>
 #include "RunnableConnection.h"
-#include <flatbuffers/flatbuffers.h>
-#include "unrealpkts_generated.h"
 #include "DrawDebugHelpers.h"
 #include "ArdanUtilities.h"
 
+using namespace UnrealCoojaMsg;
 
 #define LEDON 4500
 #define LEDOFF 0
@@ -42,11 +41,11 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 	SetLed(1, 1, 1);
 	SnapshotState(GetWorld()->TimeSeconds);
 	if (!active) return;
+	
 	fbb.Clear();
-	UnrealCoojaMsg::MessageBuilder msg(fbb);
-
+	MessageBuilder msg(fbb);
 	msg.add_id(ID);
-	msg.add_type(UnrealCoojaMsg::MsgType_PIR);
+	msg.add_type(MsgType_PIR);
 	//msg.add_pir()
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
@@ -68,11 +67,11 @@ void ASensor::OnEndOverlap(class AActor* OverlappedActor,
 	SnapshotState(GetWorld()->TimeSeconds);
 
 	if (!active) return;
+	
 	fbb.Clear();
-	UnrealCoojaMsg::MessageBuilder msg(fbb);
-
+	MessageBuilder msg(fbb);
 	msg.add_id(ID);
-	msg.add_type(UnrealCoojaMsg::MsgType_PIR);
+	msg.add_type(MsgType_PIR);
 	//msg.add_pir()
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
@@ -87,33 +86,6 @@ void ASensor::OnEndOverlap(class AActor* OverlappedActor,
 ASensor::ASensor() {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	/* Check if instantiation is real or just for placement guidlines */
-	if (UObject::IsTemplate(RF_Transient)){
-		return;
-	}
-
-//	UObject* something = StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/SensorNode.SensorNode'"));
-//	UBlueprint* bp = Cast<UBlueprint>(something);
-//	TSubclassOf<class UObject> MyItemBlueprint;
-//	MyItemBlueprint = (UClass*)bp->GeneratedClass;
-//	TSubclassOf<class UObject> MyItemBlueprint;
-//	MyItemBlueprint = Cast<UClass>(blueprint->GeneratedClass);
-	//UStaticMeshComponent* SphereVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
-	//RootComponent = SphereVisual;
-	/* Find the blueprint of the 3D model */
-	//UBlueprint* blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, TEXT("Blueprint'/Game/SensorNode.SensorNode'")));
-	//TSubclassOf<class UObject> MyItemBlueprint = (UClass*)(blueprint->GeneratedClass);
-	//if (MyItemBlueprint != NULL) {
-	//	UE_LOG(LogNet, Log, TEXT("BName: %s %s"), *(MyItemBlueprint->GetClass()->GetName()), *(this->GetActorLocation().ToString()));
-	//} else {
-	//	UE_LOG(LogNet, Log, TEXT("I got nothing"));
-	//}
-
-	/* Spawn the 3D model for the sensor in the virtual world */
-	//SensorActor = ArdanUtilities::SpawnBP<AActor>(GetWorld(), MyItemBlueprint, this->GetActorLocation(), this->GetActorRotation());
-	
-//	AArdanGameMode* gm = ((AArdanGameMode*)GetWorld()->GetAuthGameMode());
-//	if (gm)	ID = ((AArdanGameMode*)GetWorld()->GetAuthGameMode())->getNewSensorID();
 
 	/* Networking setup */
 	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
@@ -195,13 +167,11 @@ void ASensor::SetReplayMode(bool on) {
 }
 void ASensor::Led(int32 led, bool on) {
 	if (led > 3 && led < 0) return;
-//UE_LOG(LogNet, Log, TEXT("Node: %s"), *(SensorActor->GetName()))
-	//UE_LOG(LogNet, Log, TEXT("Led: %s (%i)"), *(Leds[led]->GetName()), led);
+	//UE_LOG(LogNet, Log, TEXT("Node: %s>Led: %s (%i)"), *(SensorActor->GetName()), *(Leds[led]->GetName()), led);
 	Leds[led]->SetIntensity(on ? LEDON : LEDOFF);
 }
 
 void ASensor::SetLed(uint8 R, uint8 G, uint8 B) {
-	//UE_LOG(LogNet, Log, TEXT("Node: %s"), *(actor->GetName()))
 	state.R = R;
 	state.G = G;
 	state.B = B;
@@ -225,24 +195,26 @@ void ASensor::sendLocationUpdate() {
 	FVector locVec = this->GetActorLocation();
 
 	fbb.Clear();
-	UnrealCoojaMsg::MessageBuilder msg(fbb);
+	MessageBuilder msg(fbb);
 
 	msg.add_id(ID);
-	msg.add_type(UnrealCoojaMsg::MsgType_LOCATION);
-	msg.add_location(new UnrealCoojaMsg::Vec3(locVec.X, locVec.Y, locVec.Z));
+	msg.add_type(MsgType_LOCATION);
+	msg.add_location(new Vec3(locVec.X, locVec.Y, locVec.Z));
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
 
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 									 sent, *addr);
-	//UE_LOG(LogNet, Log, TEXT("Loc update %d (%i-%i)"), ID, successful, sent);
 }
 
-void ASensor::ReceivePacket(uint8* pkt) {
-	if (pkt[0] == LED_PKT) {
-		//UE_LOG(LogNet, Log, TEXT("LEDPKT"));
-		SetLed(pkt[2], pkt[3], pkt[4]);
+void ASensor::ReceivePacket(const UnrealCoojaMsg::Message* msg) {
+	if (msg->type() == MsgType_LED) {
+		SetLed(msg->led()->Get(0), msg->led()->Get(1), msg->led()->Get(2));
+	}
+	else if (msg->type() == MsgType_RADIO_DUTY) {
+		state.radioDuty = msg->node()->Get(ID)->radioOnRatio();
+		SnapshotState(GetWorld()->TimeSeconds);
 	}
 }
 
