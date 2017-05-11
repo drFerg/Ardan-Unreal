@@ -15,7 +15,7 @@ public:
 
 	void FindSensors();
 
-	void ReceivePacket(uint8 * pkt);
+	void ReceivePacket(struct pkt* pkt);
 	void Replay();
 	void SnapshotState(float timeStamp);
 

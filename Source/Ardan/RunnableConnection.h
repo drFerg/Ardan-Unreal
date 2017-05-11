@@ -9,13 +9,17 @@
 
 #define LED_PKT 0
 #define RADIO_PKT 1
+struct pkt {
+	size_t size;
+	uint8_t* data;
+};
 
 class FRunnableConnection : public FRunnable {
 	static FRunnableConnection* Runnable;
 public:
 
 
-	FRunnableConnection(int port, TQueue<uint8*, EQueueMode::Spsc> *packetQ);
+	FRunnableConnection(int port, TQueue<struct pkt*, EQueueMode::Spsc> *packetQ);
 	virtual ~FRunnableConnection();
 
 	virtual bool Init();
@@ -23,7 +27,7 @@ public:
 	virtual void Stop();
 	virtual void Shutdown();
 
-	static FRunnableConnection* create(int port, TQueue<uint8*, EQueueMode::Spsc> *packetQ);
+	static FRunnableConnection* create(int port, TQueue<struct pkt*, EQueueMode::Spsc> *packetQ);
 private:
 
 	FRunnableThread* thread;
@@ -32,7 +36,7 @@ private:
 	ISocketSubsystem *sockSubSystem;
 	FSocket* socket;
 	int dstport = 5000;
-	TQueue<uint8*, EQueueMode::Spsc> *pktQ;
+	TQueue<struct pkt*, EQueueMode::Spsc> *pktQ;
 	/** Local address this net driver is associated with */
 	bool stop = false;
 	bool complete = false;

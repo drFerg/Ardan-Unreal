@@ -31,9 +31,18 @@ void SensorManager::FindSensors() {
 	}
 }
 
-void SensorManager::ReceivePacket(uint8* pkt) {
-	auto msg = GetMessage(pkt);
+void SensorManager::ReceivePacket(struct pkt* pkt) {
+	auto v = flatbuffers::Verifier(pkt->data, pkt->size);
+	bool ok = VerifyMessageBuffer(v);
+	if (!ok) {
+		UE_LOG(LogNet, Log, TEXT("Bad buffer %d"), pkt->size);
+		return;
+	}
+	UE_LOG(LogNet, Log, TEXT("Good buffer %d"), pkt->size);
+
+	auto msg = GetMessage(pkt->data);
 	/* Display radio event */
+	UE_LOG(LogNet, Log, TEXT("Good buffer type %d"), msg->type());
 	if (msg->type() == MsgType_RADIO) {
 		ASensor **s = sensorTable.Find(msg->id());
 		if (s == NULL) return;
@@ -49,9 +58,10 @@ void SensorManager::ReceivePacket(uint8* pkt) {
 			if (sensor2 == NULL) continue;
 			DrawDebugDirectionalArrow(world, sourceLoc, sensor2->GetSensorLocation(),
 				500.0, colours[msg->id() % 12], false, 0.5, 0, 5.0);
-			}
 		}
+	}
 	else {
+		UE_LOG(LogNet, Log, TEXT("Other message type"));
 		ASensor **s = sensorTable.Find(msg->id());
 		if (s == NULL) return;
 		ASensor* sensor = *s;
@@ -60,7 +70,7 @@ void SensorManager::ReceivePacket(uint8* pkt) {
 	}
 
 
-	}
+}
 	
 
 

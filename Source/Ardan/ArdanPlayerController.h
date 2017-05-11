@@ -111,7 +111,7 @@ protected:
 		int32 SendSize = 0x8000;
 
 		FRunnableConnection *conns;
-		TQueue<uint8*, EQueueMode::Spsc> packetQ;
+		TQueue<struct pkt*, EQueueMode::Spsc> packetQ;
 
 		FColor colours[12] = {FColor(255, 0, 0),
 													FColor(0, 255, 0),

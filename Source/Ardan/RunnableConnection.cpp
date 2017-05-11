@@ -13,7 +13,7 @@
 
 FRunnableConnection* FRunnableConnection::Runnable = NULL;
 FRunnableConnection::FRunnableConnection(int port,
-															TQueue<uint8*, EQueueMode::Spsc> *packetQ) {
+															TQueue<struct pkt*, EQueueMode::Spsc> *packetQ) {
 	dstport = port;
 	pktQ = packetQ;
 	thread = FRunnableThread::Create(this, TEXT("FRunnableConnection"), 0, TPri_AboveNormal);
@@ -28,7 +28,7 @@ FRunnableConnection::~FRunnableConnection() {
 }
 
 FRunnableConnection* FRunnableConnection::create(int port,
-															TQueue<uint8*, EQueueMode::Spsc> *packetQ) {
+															TQueue<struct pkt*, EQueueMode::Spsc> *packetQ) {
 	//Create new instance of thread if it does not exist
 	//		and the platform supports multi threading!
 	if (!Runnable && FPlatformProcess::SupportsMultithreading()) {
@@ -59,17 +59,22 @@ uint32 FRunnableConnection::Run() {
 
 	uint8* pkt;
 	uint32 size;
+	struct pkt* p; 
  	while (!stop) { /* Run until told to stop */
 		while (socket->HasPendingData(size)) {
 			pkt = (uint8*) malloc(size);
-			if (!pkt) {
+			p = (struct pkt*) malloc(sizeof(struct pkt));
+			if (!pkt || !p) {
 				UE_LOG(LogNet, Log, TEXT("Connection Thread - Malloc FAILURE!"));
 				stop = true;
 				break;
 			}
 			/* Data available, non-blocking read */
+
 			socket->RecvFrom(pkt, size, bytesRead, *fromAddr);
-			pktQ->Enqueue(pkt); /* pass on to game-thread */
+			p->size = bytesRead;
+			p->data = pkt;
+			pktQ->Enqueue(p); /* pass on to game-thread */
 		}
  	}
 	socket->Close();

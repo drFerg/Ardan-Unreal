@@ -213,7 +213,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 }
 
 void AArdanPlayerController::update_sensors() {
-  uint8* pkt;
+  struct pkt* pkt;
   int count = 0;
   while (count++ < 5 && !packetQ.IsEmpty()){
     packetQ.Dequeue(pkt);
