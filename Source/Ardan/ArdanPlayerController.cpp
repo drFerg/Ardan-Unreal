@@ -284,7 +284,7 @@ void AArdanPlayerController::SetupInputComponent()
 	InputComponent->BindAction("TimeJumpForward", IE_Pressed, this, &AArdanPlayerController::JumpForwardPressed);
 	InputComponent->BindAction("TimeJumpBackward", IE_Pressed, this, &AArdanPlayerController::JumpBackwardPressed);
 
-
+	InputComponent->BindAction("StartFire", IE_Pressed, this, &AArdanPlayerController::StartAFire);
 	
 }
 
@@ -467,3 +467,15 @@ void AArdanPlayerController::ScrollDown() {
 }
 
 
+void AArdanPlayerController::StartAFire() {
+	// Trace to see what is under the mouse cursor
+	FHitResult Hit;
+	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+
+	if (Hit.bBlockingHit) {
+		// We hit something, start a fire there
+		//static ConstructorHelpers::FObjectFinder<UParticleSystem> particle (TEXT("ParticleSystem'/Game/StarterContent/Particles/P_Fire.P_Fire'"));
+		UParticleSystem *ps = ArdanUtilities::LoadObjFromPath<UParticleSystem>(TEXT("ParticleSystem'/Game/StarterContent/Particles/P_Fire.P_Fire'"));
+		firePoints.Add(UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ps, Hit.Location));// , Hit.ImpactNormal.Rotation, true);
+	}
+}

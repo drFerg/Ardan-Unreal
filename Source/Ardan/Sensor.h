@@ -94,6 +94,7 @@ public:
 
 
 	void ColourSensor(int type);
+	void DetectFire();
 	bool DiffCurrentState(int stateIndex, float timeStamp);
 	bool StateIsEqual(FSensorState& a, FSensorState& b);
 
@@ -119,6 +120,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
 	float PIRRepeatTime = 1.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
+	float FireDetectionRadius = 500.0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
 	int32 ID = 0;

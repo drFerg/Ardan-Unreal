@@ -10,6 +10,7 @@
 #include "Sensor.h"
 #include "SensorManager.h"
 #include "TimeSphere.h"
+#include "ParticleDefinitions.h"
 
 #include "flatbuffers/c/unrealpkts_generated.h"
 #include "ActorManager.h"
@@ -31,6 +32,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Time)
 	TArray<AStaticMeshActor*> ReplayActors;
+	TArray<UParticleSystemComponent*> firePoints;
 
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
@@ -62,6 +64,7 @@ protected:
 
 	void ScrollUp();
 	void ScrollDown();
+	void StartAFire();
 	void Pause();
 	void NextCamera();
 	void update_sensors();

@@ -41,4 +41,8 @@ public:
 		SpawnInfo.bDeferConstruction = false;
 		return TheWorld->SpawnActor<VictoryObjType>(TheBP, Loc, Rot, SpawnInfo);
 	}
+
+
 };
+
+

@@ -2,6 +2,7 @@
 
 #include "Ardan.h"
 #include "ArdanGameMode.h"
+#include "ArdanPlayerController.h"
 #include "Engine/TriggerBox.h"
 #include "Sensor.h"
 #include "IPAddress.h"
@@ -38,8 +39,6 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 	/* Start motion tracking the overlapping otherActor (in tick) */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
 	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
-	SetLed(1, 1, 1);
-	SnapshotState(GetWorld()->TimeSeconds);
 	if (!active) return;
 	
 	fbb.Clear();
@@ -63,8 +62,6 @@ void ASensor::OnEndOverlap(class AActor* OverlappedActor,
 	if (bReplayMode) return;
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
 	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
-	SetLed(0,0,0);
-	SnapshotState(GetWorld()->TimeSeconds);
 
 	if (!active) return;
 	
@@ -129,6 +126,7 @@ void ASensor::BeginPlay() {
 		UE_LOG(LogNet, Log, TEXT("SensorName:Have PIR sensor"));
 		PIRSensor->OnActorBeginOverlap.AddDynamic(this, &ASensor::OnBeginOverlap);
 		PIRSensor->OnActorEndOverlap.AddDynamic(this, &ASensor::OnEndOverlap);
+		active = true;
 	}
 
 	history = new FSensorHistory();
@@ -142,7 +140,6 @@ void ASensor::BeginPlay() {
 	sendLocationUpdate();
 	UE_LOG(LogNet, Log, TEXT("%d %s"), ID,
 				*(this->GetActorLocation().ToString()));
-	sendLocationUpdate();
 }
 
 // Called every frame
@@ -160,6 +157,7 @@ void ASensor::Tick(float DeltaTime) {
 		active = true;
 		activeTimer = 0;
 	}
+	DetectFire();
 }
 
 void ASensor::SetReplayMode(bool on) {
@@ -315,4 +313,14 @@ void ASensor::ColourSensor(int type) {
 	UE_LOG(LogNet, Log, TEXT("SET MAT"));
 
 	mesh->SetMaterial(0, mat);
+}
+
+void ASensor::DetectFire() {
+	TObjectIterator< AArdanPlayerController > ThePC;
+	for (UParticleSystemComponent *p: ThePC->firePoints) {
+		FVector direction = GetActorLocation() - p->GetComponentLocation();
+		if (direction.Size() < FireDetectionRadius) {
+			UE_LOG(LogNet, Log, TEXT("FIRE detected at sensor %d"), ID);
+		}
+	}
 }
