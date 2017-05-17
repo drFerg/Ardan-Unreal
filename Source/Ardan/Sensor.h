@@ -17,6 +17,7 @@
 #include <flatbuffers/flatbuffers.h>
 #include "flatbuffers/c/unrealpkts_generated.h"
 
+#include "Sign.h"
 #include "Sensor.generated.h"
 
 USTRUCT()
@@ -123,6 +124,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
 	float FireDetectionRadius = 500.0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
+	ASign* evac_sign;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
 	int32 ID = 0;
@@ -160,4 +163,7 @@ private:
 	float activeTimer = 0;
 	void sendLocationUpdate();
 	bool bstateBeenModified = false;
+
+	void sendMsgToSim(MsgType type);
+
 };

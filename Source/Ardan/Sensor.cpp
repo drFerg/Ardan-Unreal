@@ -30,7 +30,18 @@ using namespace UnrealCoojaMsg;
 TArray<AActor*> inMotionRange;
 TMap<AActor*, FVector> inMotionPos; /* Contains actor as key and old location */
 
+void ASensor::sendMsgToSim(MsgType type) {
+	fbb.Clear();
+	MessageBuilder msg(fbb);
+	msg.add_id(ID);
+	msg.add_type(type);
+	auto mloc = msg.Finish();
+	fbb.Finish(mloc);
 
+	int sent = 0;
+	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
+		sent, *addr);
+}
 
 void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 														 class AActor* otherActor) {
@@ -41,17 +52,7 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
 	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	if (!active) return;
 	
-	fbb.Clear();
-	MessageBuilder msg(fbb);
-	msg.add_id(ID);
-	msg.add_type(MsgType_PIR);
-	//msg.add_pir()
-	auto mloc = msg.Finish();
-	fbb.Finish(mloc);
-
-	int sent = 0;
-	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
-									 sent, *addr);
+	sendMsgToSim(MsgType_PIR);
 	active = false;
 	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
@@ -65,17 +66,7 @@ void ASensor::OnEndOverlap(class AActor* OverlappedActor,
 
 	if (!active) return;
 	
-	fbb.Clear();
-	MessageBuilder msg(fbb);
-	msg.add_id(ID);
-	msg.add_type(MsgType_PIR);
-	//msg.add_pir()
-	auto mloc = msg.Finish();
-	fbb.Finish(mloc);
-
-	int sent = 0;
-	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
-										 sent, *addr);
+	sendMsgToSim(MsgType_PIR);
   active = false;
 	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
@@ -316,11 +307,14 @@ void ASensor::ColourSensor(int type) {
 }
 
 void ASensor::DetectFire() {
-	TObjectIterator< AArdanPlayerController > ThePC;
+	TObjectIterator<AArdanPlayerController> ThePC;
 	for (UParticleSystemComponent *p: ThePC->firePoints) {
 		FVector direction = GetActorLocation() - p->GetComponentLocation();
 		if (direction.Size() < FireDetectionRadius) {
-			UE_LOG(LogNet, Log, TEXT("FIRE detected at sensor %d"), ID);
+			UE_LOG(LogNet, Log, TEXT("FIRE detected at sensor %d: %s"), ID, (evac_sign?"Y":"N"));
+			if (evac_sign) evac_sign->direct_left();
+			sendMsgToSim(MsgType_FIRE);
 		}
 	}
 }
+
