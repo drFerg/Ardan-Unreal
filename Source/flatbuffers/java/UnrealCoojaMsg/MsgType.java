@@ -14,8 +14,11 @@ public final class MsgType {
   public static final byte SPEED_SLOW = 8;
   public static final byte SPEED_FAST = 9;
   public static final byte RADIO_DUTY = 10;
+  public static final byte FIRE = 11;
+  public static final byte TEMP = 12;
+  public static final byte SMOKE = 13;
 
-  public static final String[] names = { "LED", "LOCATION", "RADIO", "PIR", "PAUSE", "RESUME", "SPEED_NORM", "SPEED_SLOW", "SPEED_FAST", "RADIO_DUTY", };
+  public static final String[] names = { "LED", "LOCATION", "RADIO", "PIR", "PAUSE", "RESUME", "SPEED_NORM", "SPEED_SLOW", "SPEED_FAST", "RADIO_DUTY", "FIRE", "TEMP", "SMOKE", };
 
   public static String name(int e) { return names[e - LED]; }
 }

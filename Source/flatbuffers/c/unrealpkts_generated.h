@@ -25,8 +25,11 @@ enum MsgType {
   MsgType_SPEED_SLOW = 8,
   MsgType_SPEED_FAST = 9,
   MsgType_RADIO_DUTY = 10,
+  MsgType_FIRE = 11,
+  MsgType_TEMP = 12,
+  MsgType_SMOKE = 13,
   MsgType_MIN = MsgType_LED,
-  MsgType_MAX = MsgType_RADIO_DUTY
+  MsgType_MAX = MsgType_SMOKE
 };
 
 inline const char **EnumNamesMsgType() {
@@ -41,6 +44,9 @@ inline const char **EnumNamesMsgType() {
     "SPEED_SLOW",
     "SPEED_FAST",
     "RADIO_DUTY",
+    "FIRE",
+    "TEMP",
+    "SMOKE",
     nullptr
   };
   return names;
