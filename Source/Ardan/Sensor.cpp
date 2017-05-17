@@ -23,10 +23,6 @@ using namespace UnrealCoojaMsg;
 #define LEDON 4500
 #define LEDOFF 0
 
-
-
-
-
 TArray<AActor*> inMotionRange;
 TMap<AActor*, FVector> inMotionPos; /* Contains actor as key and old location */
 
@@ -43,32 +39,28 @@ void ASensor::sendMsgToSim(MsgType type) {
 		sent, *addr);
 }
 
-void ASensor::OnBeginOverlap(class AActor* OverlappedActor,
-														 class AActor* otherActor) {
+void ASensor::OnBeginOverlap(class AActor* OverlappedActor, class AActor* otherActor) {
 	/* If in replay ignore overlaps - recorded state will already reflect these */
 	if (bReplayMode) return;
 	/* Start motion tracking the overlapping otherActor (in tick) */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
-	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	//UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	if (!active) return;
 	
 	sendMsgToSim(MsgType_PIR);
 	active = false;
-	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
 }
 
-void ASensor::OnEndOverlap(class AActor* OverlappedActor,
-													 class AActor* otherActor) {
+void ASensor::OnEndOverlap(class AActor* OverlappedActor, class AActor* otherActor) {
 	/* If in replay ignore overlaps - recorded state will already reflect these */
 	if (bReplayMode) return;
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
-	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	//UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 
 	if (!active) return;
 	
 	sendMsgToSim(MsgType_PIR);
-  active = false;
-	//UE_LOG(LogNet, Log, TEXT("Send to %s: %i-%i"), *(addr->ToString(true)), successful, sent);
+	active = false;
 }
 
 ASensor::ASensor() {
@@ -93,7 +85,7 @@ void ASensor::BeginPlay() {
 	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	addr->SetIp(ip.Value);
 	addr->SetPort(port);
-	//TODO: FIX THIS
+
 	mesh = (UStaticMeshComponent*) this->GetComponentByClass(UStaticMeshComponent::StaticClass());
 	if (mesh) {
 		UE_LOG(LogNet, Log, TEXT("SensorName: %s"), *(mesh->GetName()));
@@ -121,7 +113,6 @@ void ASensor::BeginPlay() {
 	}
 
 	history = new FSensorHistory();
-	//state = new FSensorState();
 	state.R = 0;
 	state.G = 0;
 	state.B = 0;
@@ -147,8 +138,8 @@ void ASensor::Tick(float DeltaTime) {
 	if (activeTimer > PIRRepeatTime) {
 		active = true;
 		activeTimer = 0;
+		DetectFire();
 	}
-	DetectFire();
 }
 
 void ASensor::SetReplayMode(bool on) {
@@ -156,7 +147,6 @@ void ASensor::SetReplayMode(bool on) {
 }
 void ASensor::Led(int32 led, bool on) {
 	if (led > 3 && led < 0) return;
-	//UE_LOG(LogNet, Log, TEXT("Node: %s>Led: %s (%i)"), *(SensorActor->GetName()), *(Leds[led]->GetName()), led);
 	Leds[led]->SetIntensity(on ? LEDON : LEDOFF);
 }
 
@@ -203,6 +193,10 @@ void ASensor::ReceivePacket(const UnrealCoojaMsg::Message* msg) {
 	}
 	else if (msg->type() == MsgType_RADIO_DUTY) {
 		state.radioDuty = msg->node()->Get(ID)->radioOnRatio();
+		state.radioTXRatio = msg->node()->Get(ID)->radioTxRatio();
+		state.radioRXRatio = msg->node()->Get(ID)->radioRxRatio();
+		state.radioIXRatio = msg->node()->Get(ID)->radioInterferedRatio();
+		UE_LOG(LogNet, Log, TEXT("SENSOR: RadioDuty: %f|%f|%f"), state.radioDuty, state.radioTXRatio, state.radioRXRatio);
 		SnapshotState(GetWorld()->TimeSeconds);
 	}
 }
@@ -212,9 +206,9 @@ void ASensor::SnapshotState(float timeStamp) {
 	FSensorState s;
 	s = state;
 	s.timeStamp = timeStamp;
+	UE_LOG(LogNet, Log, TEXT("SNAPSENSOR: RadioDuty: %f|%f|%f"), state.radioDuty, state.radioTXRatio, state.radioRXRatio);
+	UE_LOG(LogNet, Log, TEXT("SNAPSENSOR: RadioDuty: %f|%f|%f"), s.radioDuty, s.radioTXRatio, s.radioRXRatio);
 	history->timeline.Add(s);
-	//UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d %f"), state->R, state->G, state->B, s->timeStamp);
-	//UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), s->R, s->G, s->B);
 }
 
 void ASensor::RewindState(float requestTime) {
@@ -228,12 +222,6 @@ void ASensor::RewindState(float requestTime) {
 
 
 void ASensor::ReplayState(float timeStamp) {
-	//int i = 0;
-	//FSensorState* s = history->timeline[i];
-	//while (i < history->timeline.Num() && s->timeStamp < timeStamp) {
-	//	s = history->timeline[++i];
-	//}
-	//state = s;
 	state = *GetStatefromTimeline(history, timeStamp);
 }
 
@@ -246,12 +234,8 @@ void ASensor::ChangeTimeline(int index) {
 
 FSensorState* ASensor::GetStatefromTimeline(FSensorHistory* h, float timeStamp) {
 	FSensorState* s = NULL;
-	//UE_LOG(LogNet, Log, TEXT("GSFT: (%d)(%d)"), h->index, h->timeline.Num());
 	while (h->index < h->timeline.Num() && h->timeline[h->index].timeStamp <= timeStamp) {
-
 		s = &(h->timeline[h->index]);
-		//UE_LOG(LogNet, Log, TEXT("GSFT: SENSOR: R%dG%dB%d %f"), s->R, s->G, s->B, s->timeStamp);
-
 		h->currentState = s;
 		h->index++;
 	}
@@ -263,7 +247,9 @@ FSensorState* ASensor::GetStatefromTimeline(int index, float timeStamp) {
 }
 
 bool ASensor::StateIsEqual(FSensorState& a, FSensorState& b) {
-	return (a.R == b.R && a.G == b.G && a.B == a.B);
+	UE_LOG(LogNet, Log, TEXT("RADIO DIFF: %f - %f (%f)"), a.radioRXRatio, b.radioRXRatio, b.timeStamp);
+	return (a.radioRXRatio == b.radioRXRatio);
+	//return (a.R == b.R && a.G == b.G && a.B == a.B);
 }
 
 bool ASensor::DiffCurrentState(int stateIndex, float timeStamp) {
@@ -276,7 +262,6 @@ bool ASensor::DiffCurrentState(int stateIndex, float timeStamp) {
 /*Reflects the stored state on the virtual object*/
 void ASensor::ReflectState() {
 	SetLed(state.R, state.G, state.B);
-	//UE_LOG(LogNet, Log, TEXT("SENSOR: R%dG%dB%d"), state->R, state->G, state->B);
 }
 
 void ASensor::ResetTimeline() {
@@ -301,8 +286,6 @@ void ASensor::ColourSensor(int type) {
 	else if (type == 1) {
 		mat = ArdanUtilities::LoadObjFromPath<UMaterialInstance>(TEXT("MaterialInstanceConstant'/Game/Materials/SensorStatus_Warning.SensorStatus_Warning'"));
 	}
-	UE_LOG(LogNet, Log, TEXT("SET MAT"));
-
 	mesh->SetMaterial(0, mat);
 }
 
@@ -317,4 +300,3 @@ void ASensor::DetectFire() {
 		}
 	}
 }
-

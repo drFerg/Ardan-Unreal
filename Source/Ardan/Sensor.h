@@ -32,6 +32,12 @@ struct FSensorState {
 	UPROPERTY(SaveGame)
 	double radioDuty;
 	UPROPERTY(SaveGame)
+	double radioTXRatio;
+	UPROPERTY(SaveGame)
+	double radioRXRatio;
+	UPROPERTY(SaveGame)
+	double radioIXRatio;
+	UPROPERTY(SaveGame)
 	float timeStamp;
 };
 
@@ -60,6 +66,9 @@ FORCEINLINE FArchive &operator <<(FArchive &Ar, FSensorState& hist)
 	Ar << hist.G;
 	Ar << hist.B;
 	Ar << hist.radioDuty;
+	Ar << hist.radioTXRatio;
+	Ar << hist.radioRXRatio;
+	Ar << hist.radioIXRatio;
 	Ar << hist.timeStamp;
 	return Ar;
 }
@@ -164,6 +173,6 @@ private:
 	void sendLocationUpdate();
 	bool bstateBeenModified = false;
 
-	void sendMsgToSim(MsgType type);
+	void sendMsgToSim(UnrealCoojaMsg::MsgType type);
 
 };
