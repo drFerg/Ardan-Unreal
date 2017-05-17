@@ -1,0 +1,3 @@
+[submodule "Source/flatbuffers"]
+	path = Source/flatbuffers
+	url = git@github.com:fergul/ArdanFlatbuffers.git
