@@ -196,7 +196,7 @@ void ASensor::ReceivePacket(const UnrealCoojaMsg::Message* msg) {
 		state.radioTXRatio = msg->node()->Get(ID)->radioTxRatio();
 		state.radioRXRatio = msg->node()->Get(ID)->radioRxRatio();
 		state.radioIXRatio = msg->node()->Get(ID)->radioInterferedRatio();
-		UE_LOG(LogNet, Log, TEXT("SENSOR: RadioDuty: %f|%f|%f"), state.radioDuty, state.radioTXRatio, state.radioRXRatio);
+		//UE_LOG(LogNet, Log, TEXT("SENSOR: RadioDuty: %f|%f|%f"), state.radioDuty, state.radioTXRatio, state.radioRXRatio);
 		SnapshotState(GetWorld()->TimeSeconds);
 	}
 }
@@ -206,8 +206,8 @@ void ASensor::SnapshotState(float timeStamp) {
 	FSensorState s;
 	s = state;
 	s.timeStamp = timeStamp;
-	UE_LOG(LogNet, Log, TEXT("SNAPSENSOR: RadioDuty: %f|%f|%f"), state.radioDuty, state.radioTXRatio, state.radioRXRatio);
-	UE_LOG(LogNet, Log, TEXT("SNAPSENSOR: RadioDuty: %f|%f|%f"), s.radioDuty, s.radioTXRatio, s.radioRXRatio);
+	//UE_LOG(LogNet, Log, TEXT("SNAPSENSOR: RadioDuty: %f|%f|%f"), state.radioDuty, state.radioTXRatio, state.radioRXRatio);
+	//UE_LOG(LogNet, Log, TEXT("SNAPSENSOR: RadioDuty: %f|%f|%f"), s.radioDuty, s.radioTXRatio, s.radioRXRatio);
 	history->timeline.Add(s);
 }
 
@@ -239,6 +239,7 @@ FSensorState* ASensor::GetStatefromTimeline(FSensorHistory* h, float timeStamp) 
 		h->currentState = s;
 		h->index++;
 	}
+	UE_LOG(LogNet, Log, TEXT("GET: %d:%f:%f (%d)"), h->index - 1, timeStamp, h->currentState->timeStamp, h->timeline.Num());
 	return s ? s : h->currentState;
 }
 
@@ -247,7 +248,7 @@ FSensorState* ASensor::GetStatefromTimeline(int index, float timeStamp) {
 }
 
 bool ASensor::StateIsEqual(FSensorState& a, FSensorState& b) {
-	UE_LOG(LogNet, Log, TEXT("RADIO DIFF: %f - %f (%f)"), a.radioRXRatio, b.radioRXRatio, b.timeStamp);
+	UE_LOG(LogNet, Log, TEXT("RADIO DIFF: %f:%f:%f - %f:%f:%f (%f)"), a.radioRXRatio, a.radioTXRatio, a.radioIXRatio, b.radioRXRatio, b.radioTXRatio, b.radioIXRatio, b.timeStamp);
 	return (a.radioRXRatio == b.radioRXRatio);
 	//return (a.R == b.R && a.G == b.G && a.B == a.B);
 }

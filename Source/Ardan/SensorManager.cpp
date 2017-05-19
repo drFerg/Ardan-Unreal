@@ -38,11 +38,11 @@ void SensorManager::ReceivePacket(struct pkt* pkt) {
 		UE_LOG(LogNet, Log, TEXT("Bad buffer %d"), pkt->size);
 		return;
 	}
-	UE_LOG(LogNet, Log, TEXT("Good buffer %d"), pkt->size);
+	//UE_LOG(LogNet, Log, TEXT("Good buffer %d"), pkt->size);
+	//UE_LOG(LogNet, Log, TEXT("Good buffer type %d"), msg->type());
 
 	auto msg = GetMessage(pkt->data);
 	/* Display radio event */
-	UE_LOG(LogNet, Log, TEXT("Good buffer type %d"), msg->type());
 	if (msg->type() == MsgType_RADIO) {
 		ASensor **s = sensorTable.Find(msg->id());
 		if (s == NULL) return;
@@ -61,7 +61,7 @@ void SensorManager::ReceivePacket(struct pkt* pkt) {
 		}
 	}
 	else {
-		UE_LOG(LogNet, Log, TEXT("Other message type"));
+		//UE_LOG(LogNet, Log, TEXT("Other message type"));
 		ASensor **s = sensorTable.Find(msg->id());
 		if (s == NULL) return;
 		ASensor* sensor = *s;
