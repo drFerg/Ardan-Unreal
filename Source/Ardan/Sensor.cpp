@@ -291,13 +291,17 @@ void ASensor::ColourSensor(int type) {
 }
 
 void ASensor::DetectFire() {
+	bool fire = false;
 	TObjectIterator<AArdanPlayerController> ThePC;
 	for (UParticleSystemComponent *p: ThePC->firePoints) {
 		FVector direction = GetActorLocation() - p->GetComponentLocation();
 		if (direction.Size() < FireDetectionRadius) {
 			UE_LOG(LogNet, Log, TEXT("FIRE detected at sensor %d: %s"), ID, (evac_sign?"Y":"N"));
-			if (evac_sign) evac_sign->direct_left();
-			sendMsgToSim(MsgType_FIRE);
+			fire = true;
 		}
+	}
+	if (fire) {
+		sendMsgToSim(MsgType_FIRE);
+		if (evac_sign) evac_sign->direct_left();
 	}
 }
