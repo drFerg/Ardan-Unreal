@@ -20,7 +20,7 @@
 
 using namespace UnrealCoojaMsg;
 
-#define LEDON 4500
+#define LEDON 100000.0
 #define LEDOFF 0
 
 TArray<AActor*> inMotionRange;
