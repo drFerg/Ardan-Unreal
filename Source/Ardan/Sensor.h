@@ -113,7 +113,6 @@ public:
 	void SetLed(uint8 R, uint8 G, uint8 B);
 
 	FVector GetSensorLocation();
-
 	/* Functions for PIR sensor */
 	UFUNCTION()
 	void OnBeginOverlap(class AActor* OverlappedActor, class AActor* OtherActor);
@@ -124,6 +123,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
 	FString SensorName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
+	bool overlay = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
 	AStaticMeshActor* PIRSensor;

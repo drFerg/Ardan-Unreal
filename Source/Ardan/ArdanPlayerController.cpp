@@ -233,12 +233,14 @@ void AArdanPlayerController::SaveArdanState() {
 	UE_LOG(LogNet, Log, TEXT("ARDAN Saved: %s (%d:%d)"), *save->SaveSlotName, 
 		actorManager->currentHistory->histMap.Num(), 
 		save->currentHistory.histMap.Num());
-	UGameplayStatics::SaveGameToSlot(save, save->SaveSlotName, save->UserIndex);
+	//UGameplayStatics::SaveGameToSlot(save, save->SaveSlotName, save->UserIndex);
+	ArdanUtilities::SaveGameToSlotCompressed(save, save->SaveSlotName, save->UserIndex);
 }
 
 void AArdanPlayerController::LoadArdanState() {
 	UArdanSave* save = Cast<UArdanSave>(UGameplayStatics::CreateSaveGameObject(UArdanSave::StaticClass()));
-	save = Cast<UArdanSave>(UGameplayStatics::LoadGameFromSlot(save->SaveSlotName, save->UserIndex));
+	//save = Cast<UArdanSave>(UGameplayStatics::LoadGameFromSlot(save->SaveSlotName, save->UserIndex));
+	save = Cast<UArdanSave>(ArdanUtilities::LoadGameFromSlotCompressed(save->SaveSlotName, save->UserIndex));
 	FString PlayerNameToDisplay = save->PlayerName;
 	*actorManager->currentHistory = save->currentHistory;
 	*actorManager->currentPawnHistory = save->currentPawnHistory;

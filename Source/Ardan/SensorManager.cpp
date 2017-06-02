@@ -49,7 +49,9 @@ void SensorManager::ReceivePacket(struct pkt* pkt) {
 		ASensor* sensor = *s;
 		if (sensor == NULL) return;
 		FVector sourceLoc = sensor->GetSensorLocation();
-		DrawDebugCircle(world, sourceLoc, 50.0, 360, colours[msg->id() % 12], false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
+		DrawDebugCircle(world, sourceLoc, 70.0, 360, colours[msg->id() % 12], false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
+		DrawDebugCircle(world, sourceLoc, 60.0, 360, colours[msg->id() % 12], false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
+
 		auto rcvd = msg->rcvd();
 		for (size_t i = 0; i < rcvd->Length(); i++) {
 			s = sensorTable.Find(rcvd->Get(i));

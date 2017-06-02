@@ -160,6 +160,13 @@ void ASensor::SetLed(uint8 R, uint8 G, uint8 B) {
 	if (Light1) Light1->GetLightComponent()->SetIntensity(R ? LEDON: LEDOFF);
 	if (Light2) Light2->GetLightComponent()->SetIntensity(R ? LEDON: LEDOFF);
 	if (Light3) Light3->GetLightComponent()->SetIntensity(R ? LEDON: LEDOFF);
+	if (overlay) {
+		FVector sourceLoc = this->GetSensorLocation();
+		if (R) DrawDebugCircle(GetWorld(), sourceLoc, 50.0, 360, FColor(255, 0, 0), false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
+		if (G) DrawDebugCircle(GetWorld(), sourceLoc, 40.0, 360, FColor(0, 255, 0), false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
+		if (B) DrawDebugCircle(GetWorld(), sourceLoc, 30.0, 360, FColor(0, 0, 255), false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
+	}
+
 }
 
 void ASensor::SetSelected() {
