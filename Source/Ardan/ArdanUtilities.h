@@ -80,9 +80,10 @@ public:
 			// Write the class name so we know what class to load to
 			FString SaveGameClassName = SaveGameObject->GetClass()->GetName();
 			MemoryWriter << SaveGameClassName;
-			FBufferArchive buffer;
 			// Then save the object state, replacing object refs and names with strings
 			//FObjectAndNameAsStringProxyArchive Ar(MemoryWriter, false);
+
+			FBufferArchive buffer;
 			FObjectAndNameAsStringProxyArchive A(buffer, false);
 			SaveGameObject->Serialize(A);
 			// Save Compressed Data
@@ -132,12 +133,6 @@ public:
 					// this is an old saved game, back up the file pointer to the beginning and assume version 1
 					MemoryReader.Seek(0);
 					SavegameFileVersion = 1;
-
-					// Note for 4.8 and beyond: if you get a crash loading a pre-4.8 version of your savegame file and 
-					// you don't want to delete it, try uncommenting these lines and changing them to use the version 
-					// information from your previous build. Then load and resave your savegame file.
-					//MemoryReader.SetUE4Ver(MyPreviousUE4Version);				// @see GPackageFileUE4Version
-					//MemoryReader.SetEngineVer(MyPreviousEngineVersion);		// @see GEngineVersion
 				}
 				else
 				{
@@ -170,13 +165,11 @@ public:
 				if (SaveGameClass != NULL)
 				{
 					OutSaveGameObject = NewObject<USaveGame>(GetTransientPackage(), SaveGameClass);
-
-					//FObjectAndNameAsStringProxyArchive Ar(MemoryReader, true);
-					//OutSaveGameObject->Serialize(Ar);
-
-					// slice tail
+					
+					// Copy and decompress compressed data
 					TArray<uint8> CompressedData;
 					MemoryReader << CompressedData;
+					UE_LOG(LogNet, Log, TEXT("CSAVESIZE: %d"), CompressedData.Num());
 
 					FArchiveLoadCompressedProxy Decompressor =
 						FArchiveLoadCompressedProxy(CompressedData, ECompressionFlags::COMPRESS_ZLIB);
@@ -185,15 +178,16 @@ public:
 						LOG(TEXT("FArchiveLoadCompressedProxy>> ERROR : File Was Not Compressed "));
 						return nullptr;
 					}
-					FBufferArchive buffer;
-					FObjectAndNameAsStringProxyArchive Ar(buffer, true);
-					
-					
+
+					TArray<uint8> buffer;
 					Decompressor << buffer;
 					UE_LOG(LogNet, Log, TEXT("SAVESIZE: %d"), buffer.Num());
-					//Decompressor.Flush();
+					Decompressor.Flush();
+
+					FMemoryReader decompReader(buffer, true);
+					FObjectAndNameAsStringProxyArchive Ar(decompReader, true);
+
 					OutSaveGameObject->Serialize(Ar);
-					//OutSaveGameObject->Serialize(buffer);
 
  					Decompressor.FlushCache();
 					CompressedData.Empty();
