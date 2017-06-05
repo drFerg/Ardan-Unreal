@@ -15,6 +15,8 @@
 #include "ArdanCharacter.h"
 #include "ArdanUtilities.h"
 
+#define LOG(txt) { GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Red, txt, false); };
+
 AArdanPlayerController::AArdanPlayerController() {
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
@@ -133,7 +135,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
   FTransform *transform = new FTransform();
   *transform = Pawn->GetTransform();
 	/* Pop and set actors old location else push current location onto stack */
-
+	LOG(FString::Printf(TEXT("CurTime: %f"), curTime));
 	if (bReverse) {
 		replayTime -= DeltaTime;
 		curTime -= DeltaTime;
