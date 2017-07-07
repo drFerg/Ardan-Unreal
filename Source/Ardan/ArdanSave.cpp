@@ -7,6 +7,6 @@
 
 
 UArdanSave::UArdanSave() {
-	SaveSlotName = TEXT("TestSaveSlot");
+	SaveSlotName = TEXT("CompressedSave");
 	UserIndex = 0;
 }

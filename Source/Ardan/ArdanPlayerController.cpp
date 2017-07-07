@@ -235,8 +235,10 @@ void AArdanPlayerController::SaveArdanState() {
 	UE_LOG(LogNet, Log, TEXT("ARDAN Saved: %s (%d:%d)"), *save->SaveSlotName, 
 		actorManager->currentHistory->histMap.Num(), 
 		save->currentHistory.histMap.Num());
-	//UGameplayStatics::SaveGameToSlot(save, save->SaveSlotName, save->UserIndex);
 	ArdanUtilities::SaveGameToSlotCompressed(save, save->SaveSlotName, save->UserIndex);
+	save->SaveSlotName = TEXT("UncompressedSave");
+	UGameplayStatics::SaveGameToSlot(save, save->SaveSlotName, save->UserIndex);
+
 }
 
 void AArdanPlayerController::LoadArdanState() {
