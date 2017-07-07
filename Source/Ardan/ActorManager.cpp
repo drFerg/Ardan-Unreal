@@ -31,16 +31,18 @@ void UActorManager::replayActors(FHistory *history, float timeStamp) {
 			//UE_LOG(LogNet, Log, TEXT("TSTAMP: %f <:> %f"), (*hist)[index]->timeStamp, curTime);
 			FObjectMeta* meta = &(*hist)[info->index];
 			mesh->SetSimulatePhysics(false);
+			//mesh->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 			info->actor->SetActorTransform(meta->transform);
 			mesh->SetPhysicsLinearVelocity(meta->velocity);
 			mesh->SetPhysicsAngularVelocity(meta->angularVelocity);
-			info->index += 1;
-			if (info->index >= (*hist).Num()) {
+			info->index++;
+			//if (info->index >= (*hist).Num()) {
 				//UE_LOG(LogNet, Log, TEXT("BREAK"));
 				//mesh->SetMobility(EComponentMobility::Stationary);
-				history->bfinished = true;
-				break;
-			}
+			//	history->bfinished = true;
+			//	mesh->SetSimulatePhysics(false);
+			//	break;
+		//	}
 		}
 	}
 }
@@ -49,20 +51,22 @@ void UActorManager::replayPawnActors(FHistory *history, float timeStamp) {
 	for (auto &itr : history->histMap) {
 		FObjectInfo* info = &(itr.Value);
 		TArray<FObjectMeta>* hist = &info->hist;
+		//UE_LOG(LogNet, Log, TEXT("histNum %d/%d"), info->index, hist->Num());
 		while (info->index < hist->Num() && (*hist)[info->index].timeStamp <= timeStamp) {
 			FObjectMeta *meta = &(*hist)[info->index];
+			//UE_LOG(LogNet, Log, TEXT("TSTAMP: %f <:> %f"), meta->timeStamp, timeStamp);
 			//UE_LOG(LogNet, Log, TEXT("inputvector: %s"), *(meta->velocity.ToString()));
 
 			info->actor->SetActorTransform(meta->transform);
 			//((APawn*)info->actor)->AddMovementInput(meta->velocity);
-			info->index += 1;
-			if (info->index >= hist->Num()) {
+			info->index++;
+			//if (info->index >= hist->Num()) {
 				//UE_LOG(LogNet, Log, TEXT("BREAK"));
 				/*info->actor->StaticMeshComponent->SetSimulatePhysics(false);*/
 				//				mesh->SetMobility(EComponentMobility::Stationary);
-				history->bfinished = true;
-				break;
-			}
+				//history->bfinished = true;
+				//break;
+			//}
 		}
 	}
 }
@@ -157,17 +161,20 @@ void UActorManager::recordActors(float deltaTime, float timeStamp) {
 	// Record a single tick for all actors
 	for (auto &itr : currentHistory->histMap) {
 		FObjectInfo* info = &(itr.Value);
-		info->index++;
+		
 		UStaticMeshComponent* mesh = ((AStaticMeshActor*)info->actor)->GetStaticMeshComponent();
 		FTransform curTrans = info->actor->GetTransform();
-		FObjectMeta meta;
 
+		if (info->hist.Num() && curTrans.Equals(info->hist.Last().transform))	continue;
+
+		FObjectMeta meta;
 		meta.transform = curTrans;
 		meta.velocity = mesh->GetPhysicsLinearVelocity();
 		meta.angularVelocity = mesh->GetPhysicsAngularVelocity();
 		meta.deltaTime = deltaTime;
 		meta.timeStamp = timeStamp;
 		info->hist.Add(meta);
+		info->index++;
 
 	}
 }
@@ -176,14 +183,16 @@ void UActorManager::recordPawnActors(float deltaTime, float timeStamp) {
 	// Record a single tick for all actors
 	for (auto &itr : currentPawnHistory->histMap) {
 		FObjectInfo* info = &(itr.Value);
-		info->index++;
 		FTransform curTrans = info->actor->GetTransform();
+		if (info->hist.Num() && curTrans.Equals(info->hist.Last().transform))	continue;
+		UE_LOG(LogNet, Log, TEXT("recording..."));
 		FObjectMeta meta;
 		meta.transform = curTrans;
 		meta.velocity = ((APawn*)info->actor)->GetPendingMovementInputVector();
 		meta.deltaTime = deltaTime;
 		meta.timeStamp = timeStamp;
 		info->hist.Add(meta);
+		info->index++;
 	}
 }
 
