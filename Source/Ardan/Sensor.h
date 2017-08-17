@@ -81,7 +81,7 @@ class ARDAN_API ASensor : public AActor
 public:
 	// Sets default values for this actor's properties
 	ASensor();
-
+	bool scaled = false;
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -131,7 +131,7 @@ public:
 	AStaticMeshActor* PIRSensor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
-	float PIRRepeatTime = 1.0;
+	float PIRRepeatTime = 2.0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
 	float FireDetectionRadius = 500.0;

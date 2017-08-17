@@ -81,6 +81,7 @@ void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 }
 
 void AArdanPlayerController::NewTimeline() {
+	reset = true;
 	bRecording = true;
 	bReplay = false;
 	bReplayHistory = true;
@@ -185,26 +186,27 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		elapsed = 0;
 		tickCount = 0;
 	}
-	//if (!(bReplay || bReverse) && tenth >= 1.0) {
-	//
-	//	tenth = 0;
-	//	FActorSpawnParameters SpawnInfo;
-	//	SpawnInfo.Owner = NULL;
-	//	SpawnInfo.Instigator = NULL;
-	//	SpawnInfo.bDeferConstruction = false;
-	//	SpawnInfo.bNoFail 		= false;
-		// SpawnInfo.bNoCollisionFail = bNoCollisionFail;
-		// UE_LOG(LogNet, Log, TEXT("Location: %s"), *(sourceLoc.ToString()));
-	//  ATimeSphere *ts = GetWorld()->SpawnActor<ATimeSphere>(sourceLoc, sourceRot, SpawnInfo);
-	//	if (timeSpheres.Num() > 0) {
-  //		DrawDebugLine(GetWorld(),
-  //			ts->GetActorLocation(), timeSpheres.Top()->GetActorLocation(),
-  //			FColor(255,0,0), false, 30, 0, 4);
-	//	}
-	//	if (ts != NULL) {
-	//		timeSpheres.Push(ts);
-	//	} else UE_LOG(LogNet, Log, TEXT("Noo"));
-//	}
+	if (!(bReplay || bReverse) && tenth >= 1.0) {
+	
+		tenth = 0;
+		FActorSpawnParameters SpawnInfo;
+		SpawnInfo.Owner = NULL;
+		SpawnInfo.Instigator = NULL;
+		SpawnInfo.bDeferConstruction = false;
+  	SpawnInfo.bNoFail 		= false;
+		//SpawnInfo.bNoCollisionFail = bNoCollisionFail;
+		 UE_LOG(LogNet, Log, TEXT("Location: %s"), *(sourceLoc.ToString()));
+	  ATimeSphere *ts = GetWorld()->SpawnActor<ATimeSphere>(sourceLoc, sourceRot, SpawnInfo);
+		if (timeSpheres.Num() > 0 && !reset) {
+  		DrawDebugLine(GetWorld(),
+  			ts->GetActorLocation(), timeSpheres.Top()->GetActorLocation(),
+  			FColor(255,0,0), false, 60, 0, 4);
+		}
+		reset = false;
+		if (ts != NULL) {
+			timeSpheres.Push(ts);
+		} else UE_LOG(LogNet, Log, TEXT("Noo"));
+	}
 
 	// keep updating the destination every tick while desired
 	if (bMoveToMouseCursor)

@@ -44,7 +44,7 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor, class AActor* otherA
 	if (bReplayMode) return;
 	/* Start motion tracking the overlapping otherActor (in tick) */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
-	//UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	if (!active) return;
 	
 	sendMsgToSim(MsgType_PIR);
@@ -165,6 +165,10 @@ void ASensor::SetLed(uint8 R, uint8 G, uint8 B) {
 		if (R) DrawDebugCircle(GetWorld(), sourceLoc, 50.0, 360, FColor(255, 0, 0), false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
 		if (G) DrawDebugCircle(GetWorld(), sourceLoc, 40.0, 360, FColor(0, 255, 0), false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
 		if (B) DrawDebugCircle(GetWorld(), sourceLoc, 30.0, 360, FColor(0, 0, 255), false, 0.5, 0, 5, FVector(1.f, 0.f, 0.f), FVector(0.f, 1.f, 0.f), false);
+	}
+	if (evac_sign) {
+		if (G) evac_sign->direct_left();
+		if (B) evac_sign->direct_right();
 	}
 
 }
@@ -292,9 +296,13 @@ void ASensor::ColourSensor(int type) {
 		mat = ArdanUtilities::LoadObjFromPath<UMaterialInstance>(TEXT("MaterialInstanceConstant'/Game/Materials/SensorStatus_Normal.SensorStatus_Normal'"));
 	}
 	else if (type == 1) {
+		if (!scaled) {
+			scaled = true;
+			this->SetActorRelativeScale3D(this->GetActorRelativeScale3D() * 2.0f);
+		}
 		mat = ArdanUtilities::LoadObjFromPath<UMaterialInstance>(TEXT("MaterialInstanceConstant'/Game/Materials/SensorStatus_Warning.SensorStatus_Warning'"));
 	}
-	mesh->SetMaterial(0, mat);
+	if (mesh) mesh->SetMaterial(0, mat);
 }
 
 void ASensor::DetectFire() {
@@ -303,7 +311,7 @@ void ASensor::DetectFire() {
 	for (UParticleSystemComponent *p: ThePC->firePoints) {
 		FVector direction = GetActorLocation() - p->GetComponentLocation();
 		if (direction.Size() < FireDetectionRadius) {
-			UE_LOG(LogNet, Log, TEXT("FIRE detected at sensor %d: %s"), ID, (evac_sign?"Y":"N"));
+			//UE_LOG(LogNet, Log, TEXT("FIRE detected at sensor %d: %s"), ID, (evac_sign?"Y":"N"));
 			fire = true;
 		}
 	}
