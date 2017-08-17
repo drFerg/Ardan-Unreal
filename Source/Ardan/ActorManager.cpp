@@ -185,7 +185,7 @@ void UActorManager::recordPawnActors(float deltaTime, float timeStamp) {
 		FObjectInfo* info = &(itr.Value);
 		FTransform curTrans = info->actor->GetTransform();
 		if (info->hist.Num() && curTrans.Equals(info->hist.Last().transform))	continue;
-		UE_LOG(LogNet, Log, TEXT("recording..."));
+		//UE_LOG(LogNet, Log, TEXT("recording..."));
 		FObjectMeta meta;
 		meta.transform = curTrans;
 		meta.velocity = ((APawn*)info->actor)->GetPendingMovementInputVector();
