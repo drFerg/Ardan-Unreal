@@ -240,7 +240,8 @@ void AArdanPlayerController::SaveArdanState() {
 	ArdanUtilities::SaveGameToSlotCompressed(save, save->SaveSlotName, save->UserIndex);
 	save->SaveSlotName = TEXT("UncompressedSave");
 	UGameplayStatics::SaveGameToSlot(save, save->SaveSlotName, save->UserIndex);
-
+	TArray<FObjectMeta> chunk;
+	ArdanUtilities::SaveChunkToSlot(chunk, save->SaveSlotName, save->UserIndex);
 }
 
 void AArdanPlayerController::LoadArdanState() {
