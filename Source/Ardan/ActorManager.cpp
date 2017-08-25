@@ -168,7 +168,6 @@ void UActorManager::recordActors(float deltaTime, float timeStamp) {
 		if (info->hist.Num() && curTrans.Equals(info->hist.Last().transform))	continue;
 
 		FObjectMeta meta;
-		meta.actorName = info->actorName;
 		meta.transform = curTrans;
 		meta.velocity = mesh->GetPhysicsLinearVelocity();
 		meta.angularVelocity = mesh->GetPhysicsAngularVelocity();
@@ -176,7 +175,6 @@ void UActorManager::recordActors(float deltaTime, float timeStamp) {
 		meta.timeStamp = timeStamp;
 		info->hist.Add(meta);
 		info->index++;
-		stream.Add(meta);
 
 	}
 }
@@ -189,14 +187,12 @@ void UActorManager::recordPawnActors(float deltaTime, float timeStamp) {
 		if (info->hist.Num() && curTrans.Equals(info->hist.Last().transform))	continue;
 		//UE_LOG(LogNet, Log, TEXT("recording..."));
 		FObjectMeta meta;
-		meta.actorName = info->actorName;
 		meta.transform = curTrans;
 		meta.velocity = ((APawn*)info->actor)->GetPendingMovementInputVector();
 		meta.deltaTime = deltaTime;
 		meta.timeStamp = timeStamp;
 		info->hist.Add(meta);
 		info->index++;
-		stream.Add(meta);
 	}
 }
 
@@ -423,9 +419,4 @@ void UActorManager::ghostActor(AActor *mesh, float amount) {
 void UActorManager::colourActor(AActor *mesh) {
 	UMaterialInterface *mat = ArdanUtilities::LoadMatFromPath(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial'"));
 	((UMeshComponent*)mesh->GetComponentByClass(UMeshComponent::StaticClass()))->SetMaterial(0, mat);
-}
-
-
-void UActorManager::saveChunkActorHistory(TArray<FObjectMeta> &chunk) {
-	chunk = MoveTemp(stream);
 }

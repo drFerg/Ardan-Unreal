@@ -4,7 +4,6 @@
 USTRUCT()
 struct FObjectMeta {
 	GENERATED_USTRUCT_BODY();
-	FString actorName;
 	UPROPERTY(SaveGame)
 	FVector velocity;
 	UPROPERTY(SaveGame)
@@ -53,7 +52,6 @@ struct FHistory {
 
 FORCEINLINE FArchive &operator <<(FArchive &Ar, FObjectMeta& TheStruct)
 {
-	Ar << TheStruct.actorName;
 	Ar << TheStruct.velocity;
 	Ar << TheStruct.angularVelocity;
 	Ar << TheStruct.transform;
@@ -97,7 +95,6 @@ public:
 	TArray<FHistory*> histories;
 	FHistory* currentHistory;
 	FHistory* currentPawnHistory;
-	TArray<FObjectMeta> stream;
 private:
 	UPROPERTY()
 	UWorld* world;
@@ -149,5 +146,4 @@ public:
 	void diff(FObjectInfo * info);
 	void ghostActor(AActor * mesh, float amount);
 	void colourActor(AActor * mesh);
-	void saveChunkActorHistory(TArray<FObjectMeta> &chunk);
 };

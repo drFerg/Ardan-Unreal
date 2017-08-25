@@ -5,7 +5,6 @@
 #include "EngineUtils.h"
 #include "GameFramework/SaveGame.h"
 #include "SaveGameSystem.h"
-#include "ActorManager.h"
 
 #define LOG(txt) { GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, txt); };
 /**
@@ -103,83 +102,6 @@ public:
 
 			Compressor.FlushCache();
 			CompressedData.Empty();
-			MemoryWriter.FlushCache();
-			MemoryWriter.Close();
-		}
-
-		return bSuccess;
-	}
-
-	static bool SaveChunkToSlot(TArray<FObjectMeta> &chunk, const FString& SlotName, const int32 UserIndex) {
-
-		bool bSuccess = false;
-
-		ISaveGameSystem* SaveSystem = IPlatformFeaturesModule::Get().GetSaveGameSystem();
-		// If we have a system and an object to save and a save name...
-
-		if (SaveSystem && (SlotName.Len() > 0))
-		{ 
-			// Load raw data from slot
-			TArray<uint8> ObjectBytes;
-			bool bSuccess = SaveSystem->LoadGame(false, *SlotName, UserIndex, ObjectBytes);
-			if (bSuccess)
-			{
-				FMemoryReader MemoryReader(ObjectBytes, true);
-				//int32 end;
-				//MemoryReader << end;
-				//if (end == END) {
-					//** WE have a legit version
-				//}
-				UE_LOG(LogNet, Log, TEXT("ARDAN seeked"), MemoryReader.TotalSize(), MemoryReader.Tell());
-
-			} 
-			else {
-				// we need to create a new slot...
-			}
-			FMemoryWriter MemoryWriter(ObjectBytes, true);
-
-			MemoryWriter.Seek(MemoryWriter.TotalSize());
-			UE_LOG(LogNet, Log, TEXT("ARDAN seeked"), MemoryWriter.TotalSize(), MemoryWriter.Tell());
-			// write file type tag. identifies this file type and indicates it's using proper versioning
-			// since older UE4 versions did not version this data.
-			//int32 FileTypeTag = SCP_UE4_SAVEGAME_FILE_TYPE_TAG;
-			//MemoryWriter << FileTypeTag;
-
-			//// Write version for this file format
-			//int32 SavegameFileVersion = SCP_UE4_SAVEGAME_FILE_VERSION;
-			//MemoryWriter << SavegameFileVersion;
-
-			//// Write out engine and UE4 version information
-			//int32 PackageFileUE4Version = GPackageFileUE4Version;
-			//MemoryWriter << PackageFileUE4Version;
-			//FEngineVersion SavedEngineVersion = FEngineVersion::Current();
-			//MemoryWriter << SavedEngineVersion;
-
-			//// Write the class name so we know what class to load to
-			////FString SaveGameClassName = SaveGameObject->GetClass()->GetName();
-			////MemoryWriter << SaveGameClassName;
-			//// Then save the object state, replacing object refs and names with strings
-			////FObjectAndNameAsStringProxyArchive Ar(MemoryWriter, false);
-
-			//FBufferArchive buffer;
-			//FObjectAndNameAsStringProxyArchive A(buffer, false);
-			//SaveGameObject->Serialize(A);
-			//// Save Compressed Data
-			//TArray<uint8> CompressedData;
-			//FArchiveSaveCompressedProxy Compressor =
-			//	FArchiveSaveCompressedProxy(CompressedData, ECompressionFlags::COMPRESS_ZLIB);
-			////SaveGameObject->Serialize(Compressor);
-			////SaveGameObject->
-			//Compressor << buffer;
-			//Compressor.Flush();
-			//// Output Compressed Data
-			//MemoryWriter << CompressedData;
-
-			//// Stuff that data into the save system with the desired file name
-			//bSuccess = SaveSystem->SaveGame(false, *SlotName, UserIndex, ObjectBytes);
-
-			//Compressor.FlushCache();
-			//CompressedData.Empty();
 			MemoryWriter.FlushCache();
 			MemoryWriter.Close();
 		}
