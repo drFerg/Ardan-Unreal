@@ -11,7 +11,15 @@
 #include "SensorManager.h"
 #include "TimeSphere.h"
 #include "ParticleDefinitions.h"
-
+#if PLATFORM_WINDOWS
+#include "WindowsHWrapper.h"
+#include "AllowWindowsPlatformTypes.h"
+#endif
+//#include <cppkafka/producer.h>
+#include <librdkafka/rdkafka.h>
+#if PLATFORM_WINDOWS
+#include "HideWindowsPlatformTypes.h"
+#endif
 #include "flatbuffers/c/unrealpkts_generated.h"
 #include "ActorManager.h"
 #include "GameFramework/PlayerController.h"
@@ -114,7 +122,9 @@ protected:
 		int32 SendSize = 0x8000;
 
 		FRunnableConnection *conns;
-		TQueue<struct pkt*, EQueueMode::Spsc> packetQ;
+		TQueue<rd_kafka_message_t *, EQueueMode::Spsc> packetQ;
+		rd_kafka_t *rk;         /* Producer instance handle */
+		rd_kafka_topic_t *rkt;  /* Topic object */
 
 		FColor colours[12] = {FColor(255, 0, 0),
 													FColor(0, 255, 0),

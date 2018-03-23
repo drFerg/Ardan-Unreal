@@ -15,6 +15,9 @@
 #include "ArdanCharacter.h"
 #include "ArdanUtilities.h"
 
+
+//using namespace cppkafka;
+using namespace std;
 #define LOG(txt) { GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Red, txt, false); };
 
 AArdanPlayerController::AArdanPlayerController() {
@@ -70,6 +73,70 @@ void AArdanPlayerController::BeginPlay() {
 	sensorManager->FindSensors();
 
   UE_LOG(LogNet, Log, TEXT("--START--"));
+	
+	rd_kafka_conf_t *conf;  /* Temporary configuration object */
+	char errstr[512];       /* librdkafka API error reporting buffer */
+	char *buf = "hello";          /* Message value temporary buffer */
+	const char *brokers = "localhost:9092";    /* Argument: broker list */
+	const char *topic = "time"; /* Argument: topic to produce to */
+
+	conf = rd_kafka_conf_new();
+	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
+	/* Set bootstrap broker(s) as a comma-separated list of
+	* host or host:port (default port 9092).
+	* librdkafka will use the bootstrap brokers to acquire the full
+	* set of brokers from the cluster. */
+	if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers,
+		errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
+		fprintf(stderr, "%s\n", errstr);
+	}
+	/*
+	* Create producer instance.
+	*
+	* NOTE: rd_kafka_new() takes ownership of the conf object
+	*       and the application must not reference it again after
+	*       this call.
+	*/
+	rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
+	if (!rk) {
+		fprintf(stderr,
+			"%% Failed to create new producer: %s\n", errstr);
+		//return 1;
+	}
+	rkt = rd_kafka_topic_new(rk, topic, NULL);
+	if (!rkt) {
+		fprintf(stderr, "%% Failed to create topic object: %s\n",
+			rd_kafka_err2str(rd_kafka_last_error()));
+		rd_kafka_destroy(rk);
+		//return 1;
+	}
+
+	if (rd_kafka_produce(
+		/* Topic object */
+		rkt,
+		/* Use builtin partitioner to select partition*/
+		RD_KAFKA_PARTITION_UA,
+		/* Make a copy of the payload. */
+		RD_KAFKA_MSG_F_COPY,
+		/* Message payload (value) and length */
+		buf, 5,
+		/* Optional key and its length */
+		NULL, 0,
+		/* Message opaque, provided in
+		* delivery report callback as
+		* msg_opaque. */
+		NULL) == -1) {
+		/**
+		* Failed to *enqueue* message for producing.
+		*/
+		fprintf(stderr,
+			"%% Failed to produce to topic %s: %s\n",
+			rd_kafka_topic_name(rkt),
+			rd_kafka_err2str(rd_kafka_last_error()));
+		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
+	}
+	else UE_LOG(LogNet, Log, TEXT("--KAFKAWIN--"));
+	rd_kafka_poll(rk, 0/*non-blocking*/);
 }
 
 void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
@@ -217,12 +284,12 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 }
 
 void AArdanPlayerController::update_sensors() {
-  struct pkt* pkt;
+	rd_kafka_message_t *rkmessage
   int count = 0;
   while (count++ < 5 && !packetQ.IsEmpty()){
-    packetQ.Dequeue(pkt);
-		sensorManager->ReceivePacket(pkt);
-		free(pkt);
+    packetQ.Dequeue(rkmessage);
+		sensorManager->ReceivePacket(rkmessage->payload);
+		rd_kafka_message_destroy(rkmessage);
   }
 }
 
@@ -404,6 +471,14 @@ void AArdanPlayerController::Pause() {
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
 
+	if (rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY, 
+												fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
+		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(rkt),
+			rd_kafka_err2str(rd_kafka_last_error()));
+		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
+	}
+	rd_kafka_poll(rk, 0);
+
 }
 
 void AArdanPlayerController::speedSlow() {
@@ -420,6 +495,13 @@ void AArdanPlayerController::speedSlow() {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
+	if (rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+		fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
+		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(rkt),
+			rd_kafka_err2str(rd_kafka_last_error()));
+		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
+	}
+	rd_kafka_poll(rk, 0);
   slow = !slow;
 }
 
@@ -436,6 +518,13 @@ void AArdanPlayerController::speedNormal() {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
+	if (rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+		fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
+		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(rkt),
+			rd_kafka_err2str(rd_kafka_last_error()));
+		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
+	}
+	rd_kafka_poll(rk, 0);
 }
 
 void AArdanPlayerController::speedFast() {
@@ -451,6 +540,13 @@ void AArdanPlayerController::speedFast() {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
+	if (rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+		fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
+		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(rkt),
+			rd_kafka_err2str(rd_kafka_last_error()));
+		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
+	}
+	rd_kafka_poll(rk, 0);
 }
 
 void AArdanPlayerController::ScrollUp() {

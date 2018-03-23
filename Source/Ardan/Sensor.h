@@ -16,7 +16,15 @@
 
 #include <flatbuffers/flatbuffers.h>
 #include "flatbuffers/c/unrealpkts_generated.h"
-
+#if PLATFORM_WINDOWS
+#include "WindowsHWrapper.h"
+#include "AllowWindowsPlatformTypes.h"
+#endif
+//#include <cppkafka/producer.h>
+#include <librdkafka/rdkafka.h>
+#if PLATFORM_WINDOWS
+#include "HideWindowsPlatformTypes.h"
+#endif
 #include "Sign.h"
 #include "Sensor.generated.h"
 
@@ -174,7 +182,8 @@ private:
 	float activeTimer = 0;
 	void sendLocationUpdate();
 	bool bstateBeenModified = false;
-
+	rd_kafka_t *rk;         /* Producer instance handle */
+	rd_kafka_topic_t *rkt;  /* Topic object */
 	void sendMsgToSim(UnrealCoojaMsg::MsgType type);
 
 };

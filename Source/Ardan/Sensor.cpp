@@ -37,6 +37,31 @@ void ASensor::sendMsgToSim(MsgType type) {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 		sent, *addr);
+	if (rd_kafka_produce(
+		/* Topic object */
+		rkt,
+		/* Use builtin partitioner to select partition*/
+		RD_KAFKA_PARTITION_UA,
+		/* Make a copy of the payload. */
+		RD_KAFKA_MSG_F_COPY,
+		/* Message payload (value) and length */
+		fbb.GetBufferPointer(), fbb.GetSize(),
+		/* Optional key and its length */
+		NULL, 0,
+		/* Message opaque, provided in
+		* delivery report callback as
+		* msg_opaque. */
+		NULL) == -1) {
+		/**
+		* Failed to *enqueue* message for producing.
+		*/
+		fprintf(stderr,
+			"%% Failed to produce to topic %s: %s\n",
+			rd_kafka_topic_name(rkt),
+			rd_kafka_err2str(rd_kafka_last_error()));
+		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
+	}
+	rd_kafka_poll(rk, 0/*non-blocking*/);
 }
 
 void ASensor::OnBeginOverlap(class AActor* OverlappedActor, class AActor* otherActor) {
@@ -86,6 +111,44 @@ void ASensor::BeginPlay() {
 	addr->SetIp(ip.Value);
 	addr->SetPort(port);
 
+
+	rd_kafka_conf_t *conf;  /* Temporary configuration object */
+	char errstr[512];       /* librdkafka API error reporting buffer */
+	char *buf = "hello";          /* Message value temporary buffer */
+	const char *brokers = "localhost:9092";    /* Argument: broker list */
+	const char *topic = "sensor"; /* Argument: topic to produce to */
+
+	conf = rd_kafka_conf_new();
+	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
+	/* Set bootstrap broker(s) as a comma-separated list of
+	* host or host:port (default port 9092).
+	* librdkafka will use the bootstrap brokers to acquire the full
+	* set of brokers from the cluster. */
+	if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers,
+		errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
+		fprintf(stderr, "%s\n", errstr);
+	}
+	/*
+	* Create producer instance.
+	*
+	* NOTE: rd_kafka_new() takes ownership of the conf object
+	*       and the application must not reference it again after
+	*       this call.
+	*/
+	rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
+	if (!rk) {
+		fprintf(stderr,
+			"%% Failed to create new producer: %s\n", errstr);
+		//return 1;
+	}
+	rkt = rd_kafka_topic_new(rk, topic, NULL);
+	if (!rkt) {
+		fprintf(stderr, "%% Failed to create topic object: %s\n",
+			rd_kafka_err2str(rd_kafka_last_error()));
+		rd_kafka_destroy(rk);
+		//return 1;
+	}
+
 	mesh = (UStaticMeshComponent*) this->GetComponentByClass(UStaticMeshComponent::StaticClass());
 	if (mesh) {
 		UE_LOG(LogNet, Log, TEXT("SensorName: %s"), *(mesh->GetName()));
@@ -122,6 +185,9 @@ void ASensor::BeginPlay() {
 	sendLocationUpdate();
 	UE_LOG(LogNet, Log, TEXT("%d %s"), ID,
 				*(this->GetActorLocation().ToString()));
+
+
+
 }
 
 // Called every frame
@@ -196,6 +262,33 @@ void ASensor::sendLocationUpdate() {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 									 sent, *addr);
+
+
+	if (rd_kafka_produce(
+		/* Topic object */
+		rkt,
+		/* Use builtin partitioner to select partition*/
+		RD_KAFKA_PARTITION_UA,
+		/* Make a copy of the payload. */
+		RD_KAFKA_MSG_F_COPY,
+		/* Message payload (value) and length */
+		fbb.GetBufferPointer(), fbb.GetSize(),
+		/* Optional key and its length */
+		NULL, 0,
+		/* Message opaque, provided in
+		* delivery report callback as
+		* msg_opaque. */
+		NULL) == -1) {
+		/**
+		* Failed to *enqueue* message for producing.
+		*/
+		fprintf(stderr,
+			"%% Failed to produce to topic %s: %s\n",
+			rd_kafka_topic_name(rkt),
+			rd_kafka_err2str(rd_kafka_last_error()));
+		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
+	}
+	rd_kafka_poll(rk, 0/*non-blocking*/);
 }
 
 void ASensor::ReceivePacket(const UnrealCoojaMsg::Message* msg) {
