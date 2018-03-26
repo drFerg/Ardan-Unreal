@@ -46,35 +46,64 @@ bool FRunnableConnection::Init() {
 	char errstr[512];
 	char *brokers = "localhost:9092";
 	rd_kafka_resp_err_t err;
+	rd_kafka_topic_conf_t *topic_conf;
 	/* Initialise networking */
+	topic_conf = rd_kafka_topic_conf_new();
 	rd_kafka_conf_t *conf = rd_kafka_conf_new();
-	if ((rk = rd_kafka_new(RD_KAFKA_CONSUMER, conf, errstr, sizeof(errstr)))) {
+	char* group = "rdkafka_consumer_example";
+	if (rd_kafka_conf_set(conf, "group.id", group,
+		errstr, sizeof(errstr)) !=
+		RD_KAFKA_CONF_OK) {
+		fprintf(stderr, "%% %s\n", errstr);
+		exit(1);
+	}
+
+	/* Consumer groups always use broker based offset storage */
+	if (rd_kafka_topic_conf_set(topic_conf, "offset.store.method",
+		"broker",
+		errstr, sizeof(errstr)) !=
+		RD_KAFKA_CONF_OK) {
+		fprintf(stderr, "%% %s\n", errstr);
+		exit(1);
+	}
+
+	/* Set default topic config for pattern-matched topics. */
+	rd_kafka_conf_set_default_topic_conf(conf, topic_conf);
+	rk = rd_kafka_new(RD_KAFKA_CONSUMER, conf, errstr, sizeof(errstr));
+	if (!rk) {
 		fprintf(stderr,
 			"%% Failed to create new consumer: %s\n",
 			errstr);
+		return false;
 		}
-
+	UE_LOG(LogNet, Log, TEXT("Connection Runnable createed kafka ref!"));
 		/* Add brokers */
 		if (rd_kafka_brokers_add(rk, brokers) == 0) {
 			fprintf(stderr, "%% No valid brokers specified\n");
-			exit(1);
+			return false;
 		}
-
+		rd_kafka_poll_set_consumer(rk);
 		/* Create topic */
 		//rkt = rd_kafka_topic_new(rk, topic, NULL);
 		//topic_conf = NULL; /* Now owned by topic */
-		rd_kafka_topic_partition_list_t *topics = rd_kafka_topic_partition_list_new(1);
+		topics = rd_kafka_topic_partition_list_new(1);
 		rd_kafka_topic_partition_list_add(topics, "actuator", -1);
 											 /* Start consuming */
-		if ((err = rd_kafka_subscribe(rk, topics))) {
+		UE_LOG(LogNet, Log, TEXT("Connection Runnable created kafka topic part!"));
+
+		err = rd_kafka_subscribe(rk, topics);
+		if (err) {
 			fprintf(stderr,
 				"%% Failed to start consuming topics: %s\n",
 				rd_kafka_err2str(err));
 		}
-	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+		UE_LOG(LogNet, Log, TEXT("Connection Runnable subbed!"));
+
+		return true;
+	/*sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
 	socket = Network::createSocket(sockSubSystem, dstport, true);
 	if (socket != NULL) return true;
-	else return false;
+	else return false;*/
 }
 
 
@@ -82,7 +111,8 @@ bool FRunnableConnection::Init() {
 /* Runs continously, until killed by endGame */
 uint32 FRunnableConnection::Run() {
 	UE_LOG(LogNet, Log, TEXT("Connection Thread Started!"));
-	
+	rd_kafka_resp_err_t err;
+
  	//while (!stop) { /* Run until told to stop */
 		//while (socket->HasPendingData(size)) {
 		//	pkt = (uint8*) malloc(size);
@@ -105,12 +135,23 @@ uint32 FRunnableConnection::Run() {
 		rd_kafka_message_t *rkmessage;
 
 		rkmessage = rd_kafka_consumer_poll(rk, 1000);
+		UE_LOG(LogNet, Log, TEXT("Spin me around"));
 		if (rkmessage) {
 			msg_consume(rkmessage);
-			//rd_kafka_message_destroy(rkmessage);
+			UE_LOG(LogNet, Log, TEXT("Got msg"));
+			rd_kafka_message_destroy(rkmessage);
 		}
 	}
-	
+	err = rd_kafka_consumer_close(rk);
+	if (err)
+		fprintf(stderr, "%% Failed to close consumer: %s\n",
+			rd_kafka_err2str(err));
+	else
+		fprintf(stderr, "%% Consumer closed\n");
+
+	rd_kafka_topic_partition_list_destroy(topics);
+
+	rd_kafka_destroy(rk);
 	complete = true;
 	UE_LOG(LogNet, Log, TEXT("Connection Thread Stopped!"));
 	return 0;
@@ -118,12 +159,14 @@ uint32 FRunnableConnection::Run() {
 
 void FRunnableConnection::Stop() {
 	stop = true;
+	
 	// socket->Close();
 	// ISocketSubsystem::Get()->DestroySocket(socket);
 }
 
 void FRunnableConnection::Shutdown() {
 	if (Runnable) {
+		UE_LOG(LogNet, Log, TEXT("Connection Thread killed!"));
 		thread->WaitForCompletion();
 		delete Runnable;
 		Runnable = NULL;
@@ -136,22 +179,23 @@ void FRunnableConnection::Shutdown() {
 void FRunnableConnection::msg_consume(rd_kafka_message_t *rkmessage) {
 	if (rkmessage->err) {
 		if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
-			/*fprintf(stderr,
-				"%% Consumer reached end of %s [%""] "
-				"message queue at offset %"PRId64"\n",
+			fprintf(stderr,
+				"%% Consumer reached end of %s [%" PRId32 "] "
+				"message queue at offset %" PRId64 "\n",
 				rd_kafka_topic_name(rkmessage->rkt),
-				rkmessage->partition, rkmessage->offset);*/
+				rkmessage->partition, rkmessage->offset);
 			return;
 		}
 
 		if (rkmessage->rkt)
 			fprintf(stderr, "%% Consume error for "
-				"topic \"%s\" [%d] "
-				"offset %d %s\n",
+				"topic \"%s\" [%" PRId32 "] "
+				"offset %" PRId64 ": %s\n",
 				rd_kafka_topic_name(rkmessage->rkt),
 				rkmessage->partition,
 				rkmessage->offset,
 				rd_kafka_message_errstr(rkmessage));
+
 		else
 			fprintf(stderr, "%% Consumer error: %s: %s\n",
 				rd_kafka_err2str(rkmessage->err),
@@ -163,11 +207,11 @@ void FRunnableConnection::msg_consume(rd_kafka_message_t *rkmessage) {
 		return;
 	}
 
-		fprintf(stdout, "%% Message (topic %s [%PRId32, offset %PRId64, %zd bytes):\n",
-			rd_kafka_topic_name(rkmessage->rkt),
-			rkmessage->partition,
-			rkmessage->offset, rkmessage->len);
-
+	fprintf(stdout, "%% Message (topic %s [%" PRId32 "], "
+		"offset %" PRId64 ", %zd bytes):\n",
+		rd_kafka_topic_name(rkmessage->rkt),
+		rkmessage->partition,
+		rkmessage->offset, rkmessage->len);
 			/* Data available, non-blocking read */
-			pktQ->Enqueue(rkmessage); /* pass on to game-thread */
+	//pktQ->Enqueue(rkmessage); /* pass on to game-thread */
 }

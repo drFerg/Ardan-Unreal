@@ -39,7 +39,7 @@ public:
 private:
 	rd_kafka_t *rk;         /* Producer instance handle */
 	rd_kafka_topic_t *rkt;  /* Topic object */
-
+	rd_kafka_topic_partition_list_t *topics;
 	FRunnableThread* thread;
 	/** Underlying socket communication */
 	bool bUDPActive = false;
