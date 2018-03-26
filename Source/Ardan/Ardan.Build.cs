@@ -6,22 +6,25 @@ public class Ardan : ModuleRules
 {
 	public Ardan(TargetInfo Target)
 	{
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "Sockets",
+
+        //string home = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../../"));
+        //cout << home;
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "Sockets",
 		"Networking" });
 
-        PublicIncludePaths.AddRange(new string[] { "C:/Users/Fergus/Documents/GitHub/flatbuffers/include/" });
-        PublicIncludePaths.Add("C:/Users/Fergus/Documents/GitHub/SRPC/src/include");
-        PublicAdditionalLibraries.Add("C:/Users/Fergus/Documents/GitHub/SRPC/libsrpc.lib");
-        PublicAdditionalLibraries.Add("C:/Program Files/cppkafka/lib/cppkafka.lib");
-        PublicIncludePaths.Add("C:/Program Files/cppkafka/include/");
-        PublicAdditionalLibraries.Add("C:/Users/Fergus/Documents/Unreal Projects/Ardan/packages/librdkafka.redist.0.11.3/build/native/lib/win7/x64/win7-x64-Release/v120/librdkafka.lib");
-        PublicAdditionalLibraries.Add("C:/Users/Fergus/Documents/Unreal Projects/Ardan/packages/librdkafka.redist.0.11.3/build/native/lib/win7/x64/win7-x64-Release/v120/librdkafkacpp.lib");
+        PublicIncludePaths.AddRange(new string[] { "C:/Users/fwl14/Documents/GitHub/flatbuffers/include/" });
+        //PublicIncludePaths.Add("C:/Users/Fergus/Documents/GitHub/SRPC/src/include");
+        //PublicAdditionalLibraries.Add("C:/Users/Fergus/Documents/GitHub/SRPC/libsrpc.lib");
+        //PublicAdditionalLibraries.Add("C:/Program Files/cppkafka/lib/cppkafka.lib");
+        //PublicIncludePaths.Add("C:/Program Files/cppkafka/include/");
+        PublicAdditionalLibraries.Add("E:/Unreal/Project/Ardan 4.15 - 3/packages/librdkafka.redist.0.11.3/build/native/lib/win7/x64/win7-x64-Release/v120/librdkafka.lib");
+        PublicAdditionalLibraries.Add("E:/Unreal/Project/Ardan 4.15 - 3/packages/librdkafka.redist.0.11.3/build/native/lib/win7/x64/win7-x64-Release/v120/librdkafkacpp.lib");
 
-        PublicIncludePaths.Add("C:/Users/Fergus/Documents/Unreal Projects/Ardan/packages/librdkafka.redist.0.11.3/build/native/include");
-        PublicIncludePaths.Add("C:/Users/Fergus/Documents/Unreal Projects/Ardan/packages/boost.1.66.0.0/");
+        PublicIncludePaths.Add("E:/Unreal/Project/Ardan 4.15 - 3/packages/librdkafka.redist.0.11.3/build/native/include");
+        //PublicIncludePaths.Add("C:/Users/Fergus/Documents/Unreal Projects/Ardan/packages/boost.1.66.0.0/");
         PublicDelayLoadDLLs.Add("librdkafka.dll");
         PublicDelayLoadDLLs.Add("librdkafkacpp.dll");
-        PublicDelayLoadDLLs.Add("cppkafka.dll");
+        //PublicDelayLoadDLLs.Add("cppkafka.dll");
         //PublicDelayLoadDLLs.Add("libsrpc.dll");
 
 
