@@ -120,6 +120,10 @@ void ASensor::BeginPlay() {
 
 	conf = rd_kafka_conf_new();
 	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
+	rd_kafka_conf_set(conf, "group.id", "rdkafka_consumer_example", NULL, 0);
+	rd_kafka_conf_set(conf, "batch.num.messages", "1", NULL, 0);
+
+
 	/* Set bootstrap broker(s) as a comma-separated list of
 	* host or host:port (default port 9092).
 	* librdkafka will use the bootstrap brokers to acquire the full
