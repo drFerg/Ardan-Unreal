@@ -140,6 +140,9 @@ void AArdanPlayerController::BeginPlay() {
 }
 
 void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	if (rk) {
+		rd_kafka_destroy(rk);
+	}
   if (conns) {
     conns->Stop();
     conns->Shutdown();
@@ -284,11 +287,14 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 }
 
 void AArdanPlayerController::update_sensors() {
-	rd_kafka_message_t *rkmessage
+	rd_kafka_message_t *rkmessage;
   int count = 0;
+	struct pkt pkt;
   while (count++ < 5 && !packetQ.IsEmpty()){
     packetQ.Dequeue(rkmessage);
-		sensorManager->ReceivePacket(rkmessage->payload);
+		pkt.data = (uint8_t *) rkmessage->payload;
+		pkt.size = rkmessage->len;
+		sensorManager->ReceivePacket(&pkt);
 		rd_kafka_message_destroy(rkmessage);
   }
 }
