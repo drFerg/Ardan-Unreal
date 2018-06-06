@@ -342,6 +342,7 @@ void ASensor::ChangeTimeline(int index) {
 
 FSensorState* ASensor::GetStatefromTimeline(FSensorHistory* h, float timeStamp) {
 	FSensorState* s = NULL;
+	if (h == NULL) return;
 	while (h->index < h->timeline.Num() && h->timeline[h->index].timeStamp <= timeStamp) {
 		s = &(h->timeline[h->index]);
 		h->currentState = s;

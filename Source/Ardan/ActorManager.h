@@ -95,6 +95,7 @@ public:
 	TArray<FHistory*> histories;
 	FHistory* currentHistory;
 	FHistory* currentPawnHistory;
+	TArray<FObjectMeta> stream;
 private:
 	UPROPERTY()
 	UWorld* world;
