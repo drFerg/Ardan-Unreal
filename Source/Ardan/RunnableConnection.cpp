@@ -135,11 +135,12 @@ uint32 FRunnableConnection::Run() {
 		rd_kafka_message_t *rkmessage;
 
 		rkmessage = rd_kafka_consumer_poll(rk, 1000);
-		UE_LOG(LogNet, Log, TEXT("Spin me around"));
+		//UE_LOG(LogNet, Log, TEXT("Spin me around"));
 		if (rkmessage) {
 			msg_consume(rkmessage);
-			UE_LOG(LogNet, Log, TEXT("Got msg"));
-			rd_kafka_message_destroy(rkmessage);
+			pktQ->Enqueue(rkmessage); /* pass on to game-thread */
+			//UE_LOG(LogNet, Log, TEXT("Got msg"));
+			//rd_kafka_message_destroy(rkmessage);
 		}
 	}
 	err = rd_kafka_consumer_close(rk);

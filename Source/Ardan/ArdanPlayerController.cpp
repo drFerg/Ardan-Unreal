@@ -291,6 +291,8 @@ void AArdanPlayerController::update_sensors() {
   int count = 0;
 	struct pkt pkt;
   while (count++ < 5 && !packetQ.IsEmpty()){
+		UE_LOG(LogNet, Log, TEXT("Got a packet to read..."));
+
     packetQ.Dequeue(rkmessage);
 		pkt.data = (uint8_t *) rkmessage->payload;
 		pkt.size = rkmessage->len;

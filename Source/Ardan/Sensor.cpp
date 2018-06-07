@@ -80,7 +80,7 @@ void ASensor::OnEndOverlap(class AActor* OverlappedActor, class AActor* otherAct
 	/* If in replay ignore overlaps - recorded state will already reflect these */
 	if (bReplayMode) return;
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
-	//UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
+	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 
 	if (!active) return;
 	
@@ -342,7 +342,7 @@ void ASensor::ChangeTimeline(int index) {
 
 FSensorState* ASensor::GetStatefromTimeline(FSensorHistory* h, float timeStamp) {
 	FSensorState* s = NULL;
-	if (h == NULL) return;
+	if (h == NULL) return NULL;
 	while (h->index < h->timeline.Num() && h->timeline[h->index].timeStamp <= timeStamp) {
 		s = &(h->timeline[h->index]);
 		h->currentState = s;
