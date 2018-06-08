@@ -200,14 +200,10 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	tenth += DeltaTime;
 	rtick += DeltaTime;
 
-	APawn* const Pawn = GetPawn();
-  FVector sourceLoc = Pawn->GetActorLocation();
-	FRotator sourceRot = Pawn->GetActorRotation();
-  FTransform *transform = new FTransform();
-  *transform = Pawn->GetTransform();
+	
 	/* Pop and set actors old location else push current location onto stack */
 	LOG(FString::Printf(TEXT("CurTime: %f"), curTime));
-	if (bReverse) {
+	/*if (bReverse) {
 		replayTime -= DeltaTime;
 		curTime -= DeltaTime;
 
@@ -242,9 +238,9 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 			actorManager->recordPawnActors(DeltaTime, curTime);
 		}
 	}
-  
-	actorManager->diff(NULL);
-	sensorManager->DiffState(0, curTime);
+  */
+	//actorManager->diff(NULL);
+	//sensorManager->DiffState(0, curTime);
 
 	/* Working out FPS */
 	
@@ -257,7 +253,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		tickCount = 0;
 	}
 	if (!(bReplay || bReverse) && tenth >= 1.0) {
-	
+		
 		tenth = 0;
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.Owner = NULL;
@@ -265,17 +261,25 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		SpawnInfo.bDeferConstruction = false;
   	SpawnInfo.bNoFail 		= false;
 		//SpawnInfo.bNoCollisionFail = bNoCollisionFail;
-		 UE_LOG(LogNet, Log, TEXT("Location: %s"), *(sourceLoc.ToString()));
-	  ATimeSphere *ts = GetWorld()->SpawnActor<ATimeSphere>(sourceLoc, sourceRot, SpawnInfo);
-		if (timeSpheres.Num() > 0 && !reset) {
-  		DrawDebugLine(GetWorld(),
-  			ts->GetActorLocation(), timeSpheres.Top()->GetActorLocation(),
-  			FColor(255,0,0), false, 60, 0, 4);
-		}
-		reset = false;
-		if (ts != NULL) {
-			timeSpheres.Push(ts);
-		} else UE_LOG(LogNet, Log, TEXT("Noo"));
+		 APawn* const Pawn = GetPawn();
+		 if (Pawn) {
+			 FVector sourceLoc = Pawn->GetActorLocation();
+			 FRotator sourceRot = Pawn->GetActorRotation();
+			 /*ATimeSphere *ts = GetWorld()->SpawnActor<ATimeSphere>(sourceLoc, sourceRot, SpawnInfo);
+			 if (timeSpheres.Num() > 0 && !reset) {
+				 DrawDebugLine(GetWorld(),
+					 ts->GetActorLocation(), timeSpheres.Top()->GetActorLocation(),
+					 FColor(255, 0, 0), false, 60, 0, 4);
+			 }
+			 reset = false;
+			 if (ts != NULL) {
+				 timeSpheres.Push(ts);
+			 }
+			 else UE_LOG(LogNet, Log, TEXT("Noo"));*/
+		 }
+		
+		
+		
 	}
 
 	// keep updating the destination every tick while desired
@@ -291,7 +295,7 @@ void AArdanPlayerController::update_sensors() {
   int count = 0;
 	struct pkt pkt;
   while (count++ < 5 && !packetQ.IsEmpty()){
-		UE_LOG(LogNet, Log, TEXT("Got a packet to read..."));
+		//UE_LOG(LogNet, Log, TEXT("Got a packet to read..."));
 
     packetQ.Dequeue(rkmessage);
 		pkt.data = (uint8_t *) rkmessage->payload;

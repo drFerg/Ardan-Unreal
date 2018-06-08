@@ -119,7 +119,7 @@ void ASensor::BeginPlay() {
 	const char *topic = "sensor"; /* Argument: topic to produce to */
 
 	conf = rd_kafka_conf_new();
-	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
+	rd_kafka_conf_set(conf, "linger.ms", "0", NULL, 0);
 	rd_kafka_conf_set(conf, "group.id", "rdkafka_consumer_example", NULL, 0);
 	rd_kafka_conf_set(conf, "batch.num.messages", "1", NULL, 0);
 

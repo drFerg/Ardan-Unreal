@@ -183,8 +183,11 @@ void UActorManager::recordPawnActors(float deltaTime, float timeStamp) {
 	// Record a single tick for all actors
 	for (auto &itr : currentPawnHistory->histMap) {
 		FObjectInfo* info = &(itr.Value);
+		if (info == NULL) continue;
 		FTransform curTrans = info->actor->GetTransform();
-		if (info->hist.Num() && curTrans.Equals(info->hist.Last().transform))	continue;
+		if (info->hist.Num()) {
+			if (curTrans.Equals(info->hist.Last().transform))	continue;
+		}
 		//UE_LOG(LogNet, Log, TEXT("recording..."));
 		FObjectMeta meta;
 		meta.transform = curTrans;

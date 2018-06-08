@@ -134,7 +134,7 @@ uint32 FRunnableConnection::Run() {
 	while (!stop) {
 		rd_kafka_message_t *rkmessage;
 
-		rkmessage = rd_kafka_consumer_poll(rk, 1000);
+		rkmessage = rd_kafka_consumer_poll(rk, 10);
 		//UE_LOG(LogNet, Log, TEXT("Spin me around"));
 		if (rkmessage) {
 			msg_consume(rkmessage);

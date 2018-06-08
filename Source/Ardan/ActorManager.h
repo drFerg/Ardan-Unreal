@@ -39,7 +39,7 @@ struct FObjectInfo {
 USTRUCT(BlueprintType)
 struct FHistory {
 	GENERATED_USTRUCT_BODY();
-	UPROPERTY(SaveGame)
+	UPROPERTY(SaveGame, Category = MapsAndSets, EditAnywhere)
 	TMap<FString, FObjectInfo> histMap;
 	UPROPERTY(SaveGame)
 	FString name;
