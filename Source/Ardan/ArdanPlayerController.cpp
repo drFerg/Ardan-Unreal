@@ -133,9 +133,9 @@ void AArdanPlayerController::BeginPlay() {
 			"%% Failed to produce to topic %s: %s\n",
 			rd_kafka_topic_name(rkt),
 			rd_kafka_err2str(rd_kafka_last_error()));
-		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
+		UE_LOG(LogNet, Log, TEXT("--Kafka: Failed to set up producer topic --"));
 	}
-	else UE_LOG(LogNet, Log, TEXT("--KAFKAWIN--"));
+	else UE_LOG(LogNet, Log, TEXT("--Kafka: Created producer topic --"));
 	rd_kafka_poll(rk, 0/*non-blocking*/);
 }
 
@@ -294,7 +294,7 @@ void AArdanPlayerController::update_sensors() {
 	rd_kafka_message_t *rkmessage;
   int count = 0;
 	struct pkt pkt;
-  while (count++ < 5 && !packetQ.IsEmpty()){
+  while (!packetQ.IsEmpty()){
 		//UE_LOG(LogNet, Log, TEXT("Got a packet to read..."));
 
     packetQ.Dequeue(rkmessage);

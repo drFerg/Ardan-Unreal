@@ -50,6 +50,8 @@ bool FRunnableConnection::Init() {
 	/* Initialise networking */
 	topic_conf = rd_kafka_topic_conf_new();
 	rd_kafka_conf_t *conf = rd_kafka_conf_new();
+	rd_kafka_conf_set(conf, "fetch.wait.max.ms", "5", NULL, 0);
+
 	char* group = "rdkafka_consumer_example";
 	if (rd_kafka_conf_set(conf, "group.id", group,
 		errstr, sizeof(errstr)) !=
@@ -134,11 +136,12 @@ uint32 FRunnableConnection::Run() {
 	while (!stop) {
 		rd_kafka_message_t *rkmessage;
 
-		rkmessage = rd_kafka_consumer_poll(rk, 10);
+		rkmessage = rd_kafka_consumer_poll(rk, 1);
 		//UE_LOG(LogNet, Log, TEXT("Spin me around"));
 		if (rkmessage) {
-			msg_consume(rkmessage);
-			pktQ->Enqueue(rkmessage); /* pass on to game-thread */
+			if (is_valid_msg(rkmessage)) {
+				pktQ->Enqueue(rkmessage); /* pass on to game-thread */
+			}
 			//UE_LOG(LogNet, Log, TEXT("Got msg"));
 			//rd_kafka_message_destroy(rkmessage);
 		}
@@ -177,7 +180,7 @@ void FRunnableConnection::Shutdown() {
 }
 
 
-void FRunnableConnection::msg_consume(rd_kafka_message_t *rkmessage) {
+bool FRunnableConnection::is_valid_msg(rd_kafka_message_t *rkmessage) {
 	if (rkmessage->err) {
 		if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
 			fprintf(stderr,
@@ -185,7 +188,7 @@ void FRunnableConnection::msg_consume(rd_kafka_message_t *rkmessage) {
 				"message queue at offset %" PRId64 "\n",
 				rd_kafka_topic_name(rkmessage->rkt),
 				rkmessage->partition, rkmessage->offset);
-			return;
+			return false;
 		}
 
 		if (rkmessage->rkt)
@@ -205,7 +208,7 @@ void FRunnableConnection::msg_consume(rd_kafka_message_t *rkmessage) {
 		if (rkmessage->err == RD_KAFKA_RESP_ERR__UNKNOWN_PARTITION ||
 			rkmessage->err == RD_KAFKA_RESP_ERR__UNKNOWN_TOPIC)
 			stop = true;
-		return;
+		return false;
 	}
 
 	fprintf(stdout, "%% Message (topic %s [%" PRId32 "], "
@@ -214,5 +217,5 @@ void FRunnableConnection::msg_consume(rd_kafka_message_t *rkmessage) {
 		rkmessage->partition,
 		rkmessage->offset, rkmessage->len);
 			/* Data available, non-blocking read */
-	//pktQ->Enqueue(rkmessage); /* pass on to game-thread */
+	return true;
 }

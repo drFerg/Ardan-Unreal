@@ -54,6 +54,6 @@ private:
 	/* Storage to receive Cooja packets into */
 	uint8 data[MAX_PACKET_SIZE];
 	int32 bytesRead = 0;
-	void msg_consume(rd_kafka_message_t *rkmessage);
+	bool is_valid_msg(rd_kafka_message_t *rkmessage);
 
 };

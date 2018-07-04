@@ -35,15 +35,15 @@ void ASensor::sendMsgToSim(MsgType type) {
 	fbb.Finish(mloc);
 
 	int sent = 0;
-	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
-		sent, *addr);
+//	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
+	//	sent, *addr);
 	if (rd_kafka_produce(
 		/* Topic object */
 		rkt,
 		/* Use builtin partitioner to select partition*/
 		RD_KAFKA_PARTITION_UA,
-		/* Make a copy of the payload. */
-		RD_KAFKA_MSG_F_COPY,
+		/* Don't Make a copy of the payload. */
+		NULL, //RD_KAFKA_MSG_F_COPY,
 		/* Message payload (value) and length */
 		fbb.GetBufferPointer(), fbb.GetSize(),
 		/* Optional key and its length */
@@ -61,6 +61,17 @@ void ASensor::sendMsgToSim(MsgType type) {
 			rd_kafka_err2str(rd_kafka_last_error()));
 		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
 	}
+	/* A producer application should continually serve
+	* the delivery report queue by calling rd_kafka_poll()
+	* at frequent intervals.
+	* Either put the poll call in your main loop, or in a
+	* dedicated thread, or call it after every
+	* rd_kafka_produce() call.
+	* Just make sure that rd_kafka_poll() is still called
+	* during periods where you are not producing any messages
+	* to make sure previously produced messages have their
+	* delivery report callback served (and any other callbacks
+	* you register). */
 	rd_kafka_poll(rk, 0/*non-blocking*/);
 }
 
@@ -69,23 +80,25 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor, class AActor* otherA
 	if (bReplayMode) return;
 	/* Start motion tracking the overlapping otherActor (in tick) */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
-	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 	if (!active) return;
 	
 	sendMsgToSim(MsgType_PIR);
 	active = false;
+	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
+
 }
 
 void ASensor::OnEndOverlap(class AActor* OverlappedActor, class AActor* otherActor) {
 	/* If in replay ignore overlaps - recorded state will already reflect these */
 	if (bReplayMode) return;
 	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
-	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 
 	if (!active) return;
 	
 	sendMsgToSim(MsgType_PIR);
 	active = false;
+	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
+
 }
 
 ASensor::ASensor() {
@@ -119,7 +132,7 @@ void ASensor::BeginPlay() {
 	const char *topic = "sensor"; /* Argument: topic to produce to */
 
 	conf = rd_kafka_conf_new();
-	rd_kafka_conf_set(conf, "linger.ms", "0", NULL, 0);
+	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
 	rd_kafka_conf_set(conf, "group.id", "rdkafka_consumer_example", NULL, 0);
 	rd_kafka_conf_set(conf, "batch.num.messages", "1", NULL, 0);
 
