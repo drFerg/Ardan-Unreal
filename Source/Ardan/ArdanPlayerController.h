@@ -125,6 +125,8 @@ protected:
 		TQueue<rd_kafka_message_t *, EQueueMode::Spsc> packetQ;
 		rd_kafka_t *rk;         /* Producer instance handle */
 		rd_kafka_topic_t *rkt;  /* Topic object */
+		rd_kafka_t *sensorrk;         /* Producer instance handle */
+		rd_kafka_topic_t *sensorrkt;  /* Topic object */
 
 		FColor colours[12] = {FColor(255, 0, 0),
 													FColor(0, 255, 0),

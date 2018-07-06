@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
+//#include <librdkafka/rdkafka.h>
+
 #include "Sensor.h"
 /**
  * 
@@ -32,7 +34,7 @@ public:
 	bool DiffState(int index, float timeStamp);
 	void CopyOutState(TMap<FString, FSensorHistory>* sensorHistory);
 	void CopyInState(TMap<FString, FSensorHistory>* sensorHistory);
-
+	void SetProducer(rd_kafka_t *rk, rd_kafka_topic_t *rkt);
 private:
 	UWorld* world;
 	TArray<ASensor*> sensors;

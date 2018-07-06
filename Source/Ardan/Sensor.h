@@ -90,6 +90,7 @@ public:
 	// Sets default values for this actor's properties
 	ASensor();
 	bool scaled = false;
+	void SetProducer(rd_kafka_t * new_rk, rd_kafka_topic_t * new_rkt);
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -185,5 +186,5 @@ private:
 	rd_kafka_t *rk;         /* Producer instance handle */
 	rd_kafka_topic_t *rkt;  /* Topic object */
 	void sendMsgToSim(UnrealCoojaMsg::MsgType type);
-
+	double detectTime = 0;
 };

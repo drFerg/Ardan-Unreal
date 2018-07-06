@@ -25,7 +25,7 @@ using namespace UnrealCoojaMsg;
 
 TArray<AActor*> inMotionRange;
 TMap<AActor*, FVector> inMotionPos; /* Contains actor as key and old location */
-
+static char* SENSORTEXT = "SENSOR";
 void ASensor::sendMsgToSim(MsgType type) {
 	fbb.Clear();
 	MessageBuilder msg(fbb);
@@ -34,7 +34,7 @@ void ASensor::sendMsgToSim(MsgType type) {
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
 
-	int sent = 0;
+	//int sent = 0;
 //	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 	//	sent, *addr);
 	if (rd_kafka_produce(
@@ -47,7 +47,7 @@ void ASensor::sendMsgToSim(MsgType type) {
 		/* Message payload (value) and length */
 		fbb.GetBufferPointer(), fbb.GetSize(),
 		/* Optional key and its length */
-		NULL, 0,
+		SENSORTEXT, 6,
 		/* Message opaque, provided in
 		* delivery report callback as
 		* msg_opaque. */
@@ -81,8 +81,10 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor, class AActor* otherA
 	/* Start motion tracking the overlapping otherActor (in tick) */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
 	if (!active) return;
-	
+	detectTime = FPlatformTime::Seconds();
 	sendMsgToSim(MsgType_PIR);
+	double end = FPlatformTime::Seconds();
+	UE_LOG(LogActor, Warning, TEXT("Send delay %d: %.6f Start: %.6f"), ID, end - detectTime, detectTime);
 	active = false;
 	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 
@@ -113,7 +115,10 @@ ASensor::ASensor() {
 	socket->SetSendBufferSize(SendSize, SendSize);
 }
 
-
+void ASensor::SetProducer(rd_kafka_t * new_rk, rd_kafka_topic_t * new_rkt) {
+	rk = new_rk;
+	rkt = new_rkt;
+}
 // Called when the game starts or when spawned
 void ASensor::BeginPlay() {
 	Super::BeginPlay();
@@ -125,46 +130,6 @@ void ASensor::BeginPlay() {
 	addr->SetPort(port);
 
 
-	rd_kafka_conf_t *conf;  /* Temporary configuration object */
-	char errstr[512];       /* librdkafka API error reporting buffer */
-	char *buf = "hello";          /* Message value temporary buffer */
-	const char *brokers = "localhost:9092";    /* Argument: broker list */
-	const char *topic = "sensor"; /* Argument: topic to produce to */
-
-	conf = rd_kafka_conf_new();
-	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
-	rd_kafka_conf_set(conf, "group.id", "rdkafka_consumer_example", NULL, 0);
-	rd_kafka_conf_set(conf, "batch.num.messages", "1", NULL, 0);
-
-
-	/* Set bootstrap broker(s) as a comma-separated list of
-	* host or host:port (default port 9092).
-	* librdkafka will use the bootstrap brokers to acquire the full
-	* set of brokers from the cluster. */
-	if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers,
-		errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
-		fprintf(stderr, "%s\n", errstr);
-	}
-	/*
-	* Create producer instance.
-	*
-	* NOTE: rd_kafka_new() takes ownership of the conf object
-	*       and the application must not reference it again after
-	*       this call.
-	*/
-	rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
-	if (!rk) {
-		fprintf(stderr,
-			"%% Failed to create new producer: %s\n", errstr);
-		//return 1;
-	}
-	rkt = rd_kafka_topic_new(rk, topic, NULL);
-	if (!rkt) {
-		fprintf(stderr, "%% Failed to create topic object: %s\n",
-			rd_kafka_err2str(rd_kafka_last_error()));
-		rd_kafka_destroy(rk);
-		//return 1;
-	}
 
 	mesh = (UStaticMeshComponent*) this->GetComponentByClass(UStaticMeshComponent::StaticClass());
 	if (mesh) {
@@ -310,6 +275,8 @@ void ASensor::sendLocationUpdate() {
 
 void ASensor::ReceivePacket(const UnrealCoojaMsg::Message* msg) {
 	if (msg->type() == MsgType_LED) {
+		double end = FPlatformTime::Seconds();
+		UE_LOG(LogActor, Warning, TEXT("Sensor %d RTT: %.6f Start: %.6f"), ID, end - detectTime, detectTime);
 		SetLed(msg->led()->Get(0), msg->led()->Get(1), msg->led()->Get(2));
 	}
 	else if (msg->type() == MsgType_RADIO_DUTY) {

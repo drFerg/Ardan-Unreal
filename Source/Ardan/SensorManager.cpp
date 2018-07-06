@@ -160,3 +160,10 @@ void SensorManager::CopyInState(TMap<FString, FSensorHistory>* sensorHistory) {
 		sensor->ReflectState();
 	}
 }
+
+void SensorManager::SetProducer(rd_kafka_t * rk, rd_kafka_topic_t * rkt)
+{
+	for (ASensor* sensor : sensors) {
+		sensor->SetProducer(rk, rkt);
+	}
+}

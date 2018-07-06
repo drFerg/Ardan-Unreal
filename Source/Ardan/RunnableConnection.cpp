@@ -50,7 +50,7 @@ bool FRunnableConnection::Init() {
 	/* Initialise networking */
 	topic_conf = rd_kafka_topic_conf_new();
 	rd_kafka_conf_t *conf = rd_kafka_conf_new();
-	rd_kafka_conf_set(conf, "fetch.wait.max.ms", "5", NULL, 0);
+	rd_kafka_conf_set(conf, "fetch.wait.max.ms", "0", NULL, 0);
 
 	char* group = "rdkafka_consumer_example";
 	if (rd_kafka_conf_set(conf, "group.id", group,
