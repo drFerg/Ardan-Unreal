@@ -50,7 +50,9 @@ bool FRunnableConnection::Init() {
 	/* Initialise networking */
 	topic_conf = rd_kafka_topic_conf_new();
 	rd_kafka_conf_t *conf = rd_kafka_conf_new();
-	rd_kafka_conf_set(conf, "fetch.wait.max.ms", "0", NULL, 0);
+	rd_kafka_conf_set(conf, "fetch.wait.max.ms", "1", NULL, 0);
+	rd_kafka_conf_set(conf, "fetch.error.backoff.ms", "1", NULL, 0);
+	rd_kafka_conf_set(conf, "socket.blocking.max.ms", "5", NULL, 0);
 
 	char* group = "rdkafka_consumer_example";
 	if (rd_kafka_conf_set(conf, "group.id", group,
@@ -191,7 +193,7 @@ bool FRunnableConnection::is_valid_msg(rd_kafka_message_t *rkmessage) {
 			return false;
 		}
 
-		if (rkmessage->rkt)
+		if (rkmessage->rkt) {
 			fprintf(stderr, "%% Consume error for "
 				"topic \"%s\" [%" PRId32 "] "
 				"offset %" PRId64 ": %s\n",
@@ -199,11 +201,12 @@ bool FRunnableConnection::is_valid_msg(rd_kafka_message_t *rkmessage) {
 				rkmessage->partition,
 				rkmessage->offset,
 				rd_kafka_message_errstr(rkmessage));
-
-		else
+		}
+		else {
 			fprintf(stderr, "%% Consumer error: %s: %s\n",
 				rd_kafka_err2str(rkmessage->err),
 				rd_kafka_message_errstr(rkmessage));
+		}
 
 		if (rkmessage->err == RD_KAFKA_RESP_ERR__UNKNOWN_PARTITION ||
 			rkmessage->err == RD_KAFKA_RESP_ERR__UNKNOWN_TOPIC)

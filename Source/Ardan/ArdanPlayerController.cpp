@@ -116,6 +116,7 @@ void AArdanPlayerController::BeginPlay() {
 	conf = rd_kafka_conf_new();
 	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
 	rd_kafka_conf_set(conf, "group.id", "rdkafka_consumer_example", NULL, 0);
+	rd_kafka_conf_set(conf, "socket.blocking.max.ms", "1", NULL, 0);
 
 
 	/* Set bootstrap broker(s) as a comma-separated list of
