@@ -26,10 +26,10 @@ AArdanPlayerController::AArdanPlayerController() {
 	/* Allows camera movement when world is paused */
 	SetTickableWhenPaused(true);
 	bShouldPerformFullTickWhenPaused = true;
-
+	PrimaryActorTick.TickGroup = TG_PrePhysics;
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
-
+	
   /* Networking setup */
 	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
 	socket = sockSubSystem->CreateSocket(NAME_DGram, TEXT("UDPCONN2"), true);
@@ -69,7 +69,7 @@ void AArdanPlayerController::BeginPlay() {
 	actorManager = NewObject<UActorManager>();
 	actorManager->init(GetWorld(), this);
 	actorManager->initHist();
-	sensorManager = new SensorManager(GetWorld());
+	sensorManager = new SensorManager(GetWorld(), this);
 	sensorManager->FindSensors();
 
   UE_LOG(LogNet, Log, TEXT("--START--"));
@@ -82,6 +82,8 @@ void AArdanPlayerController::BeginPlay() {
 
 	conf = rd_kafka_conf_new();
 	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
+	rd_kafka_conf_set(conf, "socket.blocking.max.ms", "1", NULL, 0);
+
 	/* Set bootstrap broker(s) as a comma-separated list of
 	* host or host:port (default port 9092).
 	* librdkafka will use the bootstrap brokers to acquire the full
@@ -117,6 +119,8 @@ void AArdanPlayerController::BeginPlay() {
 	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
 	rd_kafka_conf_set(conf, "group.id", "rdkafka_consumer_example", NULL, 0);
 	rd_kafka_conf_set(conf, "socket.blocking.max.ms", "1", NULL, 0);
+	rd_kafka_conf_set(conf, "fetch.error.backoff.ms", "1", NULL, 0);
+	
 
 
 	/* Set bootstrap broker(s) as a comma-separated list of

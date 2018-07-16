@@ -10,7 +10,7 @@
 class ARDAN_API SensorManager
 {
 public:
-	SensorManager(UWorld* world);
+	SensorManager(UWorld * w, AActor * con);
 	~SensorManager();
 
 	void AddSensor(ASensor * sensor);
@@ -40,6 +40,7 @@ private:
 	TArray<ASensor*> sensors;
 	TMap<int, ASensor*> sensorTable;
 	bool bHasHistory = false;
+	AActor *controller;
 
 	FColor colours[12] = { FColor(255, 0, 0),
 		FColor(0, 255, 0),

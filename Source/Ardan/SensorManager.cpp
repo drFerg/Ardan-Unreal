@@ -11,8 +11,9 @@
 
 using namespace UnrealCoojaMsg; 
 
-SensorManager::SensorManager(UWorld* w) {
+SensorManager::SensorManager(UWorld* w, AActor *con) {
 	world = w;
+	controller = con;
 }
 
 SensorManager::~SensorManager()
@@ -22,12 +23,14 @@ SensorManager::~SensorManager()
 void SensorManager::AddSensor(ASensor *sensor) {
 	sensors.Add(sensor);
 	sensorTable.Add(sensor->ID, sensor);
+	sensor->AddTickPrerequisiteActor(controller);
 }
 
 void SensorManager::FindSensors() {
 	/* Find all sensors in the world to handle connections to Cooja */
 	for (TActorIterator<ASensor> ActorItr(world); ActorItr; ++ActorItr) {
 			AddSensor(ActorItr.operator *());
+			
 	}
 }
 

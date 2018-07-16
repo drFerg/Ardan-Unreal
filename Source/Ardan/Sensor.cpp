@@ -276,7 +276,7 @@ void ASensor::sendLocationUpdate() {
 void ASensor::ReceivePacket(const UnrealCoojaMsg::Message* msg) {
 	if (msg->type() == MsgType_LED) {
 		double end = FPlatformTime::Seconds();
-		UE_LOG(LogActor, Warning, TEXT("Sensor %d RTT: %.6f Start: %.6f"), ID, end - detectTime, detectTime);
+		UE_LOG(LogActor, Warning, TEXT("Sensor %d RTT: %.6f end: %.6f"), ID, end - detectTime, end);
 		SetLed(msg->led()->Get(0), msg->led()->Get(1), msg->led()->Get(2));
 	}
 	else if (msg->type() == MsgType_RADIO_DUTY) {

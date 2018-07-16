@@ -50,9 +50,9 @@ bool FRunnableConnection::Init() {
 	/* Initialise networking */
 	topic_conf = rd_kafka_topic_conf_new();
 	rd_kafka_conf_t *conf = rd_kafka_conf_new();
-	rd_kafka_conf_set(conf, "fetch.wait.max.ms", "1", NULL, 0);
+	rd_kafka_conf_set(conf, "fetch.wait.max.ms", "0", NULL, 0);
 	rd_kafka_conf_set(conf, "fetch.error.backoff.ms", "1", NULL, 0);
-	rd_kafka_conf_set(conf, "socket.blocking.max.ms", "5", NULL, 0);
+	rd_kafka_conf_set(conf, "socket.blocking.max.ms", "1", NULL, 0);
 
 	char* group = "rdkafka_consumer_example";
 	if (rd_kafka_conf_set(conf, "group.id", group,
@@ -134,20 +134,25 @@ uint32 FRunnableConnection::Run() {
 		//	pktQ->Enqueue(p); /* pass on to game-thread */
 		//}
  	//}
-
+	rd_kafka_message_t *rkmessage;
+	double detectTime = 0;
 	while (!stop) {
-		rd_kafka_message_t *rkmessage;
 
 		rkmessage = rd_kafka_consumer_poll(rk, 1);
 		//UE_LOG(LogNet, Log, TEXT("Spin me around"));
 		if (rkmessage) {
 			if (is_valid_msg(rkmessage)) {
+
 				pktQ->Enqueue(rkmessage); /* pass on to game-thread */
+				detectTime = FPlatformTime::Seconds();
+				UE_LOG(LogActor, Warning, TEXT("Received at: %.6f"), detectTime);
+
 			}
 			//UE_LOG(LogNet, Log, TEXT("Got msg"));
 			//rd_kafka_message_destroy(rkmessage);
 		}
 	}
+
 	err = rd_kafka_consumer_close(rk);
 	if (err)
 		fprintf(stderr, "%% Failed to close consumer: %s\n",
