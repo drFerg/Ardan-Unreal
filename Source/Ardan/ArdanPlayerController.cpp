@@ -14,12 +14,27 @@
 #include "Runtime/Engine/Classes/Camera/CameraActor.h"
 #include "ArdanCharacter.h"
 #include "ArdanUtilities.h"
-
+#include <inttypes.h>
 
 //using namespace cppkafka;
 using namespace std;
 #define LOG(txt) { GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Red, txt, false); };
 
+
+static void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void *opaque) {
+	if (rkmessage->err)
+		fprintf(stderr, "%% Message delivery failed: %s\n",
+			rd_kafka_err2str(rkmessage->err));
+	else {
+		int64_t timestamp;
+		rd_kafka_timestamp_type_t tstype;
+		timestamp = rd_kafka_message_timestamp(rkmessage, &tstype);
+		UE_LOG(LogNet, Log,
+			TEXT(">> Message delivered (%zd bytes, partition %I32d, time: %I64d )\n"),
+			rkmessage->len, rkmessage->partition, timestamp);
+	}
+	/* The rkmessage is destroyed automatically by librdkafka */
+}
 AArdanPlayerController::AArdanPlayerController() {
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
@@ -116,6 +131,7 @@ void AArdanPlayerController::BeginPlay() {
 	const char *sensorTopic = "sensor"; /* Argument: topic to produce to */
 
 	conf = rd_kafka_conf_new();
+	rd_kafka_conf_set_dr_msg_cb(conf, dr_msg_cb);
 	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
 	rd_kafka_conf_set(conf, "group.id", "rdkafka_consumer_example", NULL, 0);
 	rd_kafka_conf_set(conf, "socket.blocking.max.ms", "1", NULL, 0);
@@ -508,9 +524,9 @@ void AArdanPlayerController::Pause() {
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
 
-	if (rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY, 
+	if (rd_kafka_produce(sensorrkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY, 
 												fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
-		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(rkt),
+		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(sensorrkt),
 			rd_kafka_err2str(rd_kafka_last_error()));
 		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
 	}
@@ -532,9 +548,9 @@ void AArdanPlayerController::speedSlow() {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
-	if (rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+	if (rd_kafka_produce(sensorrkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
 		fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
-		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(rkt),
+		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(sensorrkt),
 			rd_kafka_err2str(rd_kafka_last_error()));
 		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
 	}
@@ -555,9 +571,9 @@ void AArdanPlayerController::speedNormal() {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
-	if (rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+	if (rd_kafka_produce(sensorrkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
 		fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
-		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(rkt),
+		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(sensorrkt),
 			rd_kafka_err2str(rd_kafka_last_error()));
 		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
 	}
@@ -577,9 +593,9 @@ void AArdanPlayerController::speedFast() {
 	int sent = 0;
 	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 										 sent, *addr);
-	if (rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+	if (rd_kafka_produce(sensorrkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
 		fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
-		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(rkt),
+		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(sensorrkt),
 			rd_kafka_err2str(rd_kafka_last_error()));
 		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
 	}

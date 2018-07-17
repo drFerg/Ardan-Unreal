@@ -78,13 +78,15 @@ void ASensor::sendMsgToSim(MsgType type) {
 void ASensor::OnBeginOverlap(class AActor* OverlappedActor, class AActor* otherActor) {
 	/* If in replay ignore overlaps - recorded state will already reflect these */
 	if (bReplayMode) return;
+	
+	if (!active) return;
+	sendMsgToSim(MsgType_PIR);
+	detectTime = FPlatformTime::Seconds();
+
+	//double end = FPlatformTime::Seconds();
+	//UE_LOG(LogActor, Warning, TEXT("Send delay %d: %.6f Start: %.6f"), ID, end - detectTime, detectTime);
 	/* Start motion tracking the overlapping otherActor (in tick) */
 	inMotionPos.Add(otherActor, otherActor->GetActorLocation());
-	if (!active) return;
-	detectTime = FPlatformTime::Seconds();
-	sendMsgToSim(MsgType_PIR);
-	double end = FPlatformTime::Seconds();
-	UE_LOG(LogActor, Warning, TEXT("Send delay %d: %.6f Start: %.6f"), ID, end - detectTime, detectTime);
 	active = false;
 	UE_LOG(LogNet, Log, TEXT("%s: Someone entered (%s)"), *(this->GetName()), *(otherActor->GetName()));
 
@@ -93,11 +95,12 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor, class AActor* otherA
 void ASensor::OnEndOverlap(class AActor* OverlappedActor, class AActor* otherActor) {
 	/* If in replay ignore overlaps - recorded state will already reflect these */
 	if (bReplayMode) return;
-	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
 
 	if (!active) return;
 	
 	sendMsgToSim(MsgType_PIR);
+	inMotionRange.Remove(otherActor); /* Remove otherActor from motion tracking */
+
 	active = false;
 	UE_LOG(LogNet, Log, TEXT("%s: Someone left (%s)"), *(this->GetName()), *(otherActor->GetName()));
 
