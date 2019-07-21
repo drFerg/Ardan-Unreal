@@ -44,7 +44,7 @@ FRunnableConnection* FRunnableConnection::create(int port,
 
 bool FRunnableConnection::Init() {
 	char errstr[512];
-	char *brokers = "localhost:9092";
+	char *brokers = "192.168.0.121:9092";
 	rd_kafka_resp_err_t err;
 	rd_kafka_topic_conf_t *topic_conf;
 	/* Initialise networking */
@@ -53,6 +53,7 @@ bool FRunnableConnection::Init() {
 	rd_kafka_conf_set(conf, "fetch.wait.max.ms", "0", NULL, 0);
 	rd_kafka_conf_set(conf, "fetch.error.backoff.ms", "1", NULL, 0);
 	rd_kafka_conf_set(conf, "socket.blocking.max.ms", "1", NULL, 0);
+	fprintf(stderr, "%s\n", brokers);
 
 	char* group = "rdkafka_consumer_example";
 	if (rd_kafka_conf_set(conf, "group.id", group,

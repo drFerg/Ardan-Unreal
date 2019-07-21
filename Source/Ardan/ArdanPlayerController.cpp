@@ -92,9 +92,10 @@ void AArdanPlayerController::BeginPlay() {
 	rd_kafka_conf_t *conf;  /* Temporary configuration object */
 	char errstr[512];       /* librdkafka API error reporting buffer */
 	char *buf = "hello";          /* Message value temporary buffer */
-	const char *brokers = "localhost:9092";    /* Argument: broker list */
+	const char *brokers = "192.168.0.121:9092";    /* Argument: broker list */
 	const char *topic = "time"; /* Argument: topic to produce to */
-
+	UE_LOG(LogNet, Log, TEXT("--Kafka:-- %s"), brokers);
+	fprintf(stderr, "%s\n", brokers);
 	conf = rd_kafka_conf_new();
 	rd_kafka_conf_set(conf, "queue.buffering.max.ms", "0", NULL, 0);
 	rd_kafka_conf_set(conf, "socket.blocking.max.ms", "1", NULL, 0);
@@ -513,9 +514,10 @@ void AArdanPlayerController::Pause() {
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
 
 	//msg.add_id(ID);
-	msg.add_type(UGameplayStatics::IsGamePaused(GetWorld()) ?
-                                              UnrealCoojaMsg::MsgType_PAUSE :
-                                              UnrealCoojaMsg::MsgType_RESUME);
+	msg.add_type(UnrealCoojaMsg::MsgType_SIMSTATE);
+	msg.add_simState((UGameplayStatics::IsGamePaused(GetWorld()) ?
+		UnrealCoojaMsg::SimState_PAUSE :
+		UnrealCoojaMsg::SimState_RESUME));
 	//msg.add_pir()
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
@@ -540,8 +542,11 @@ void AArdanPlayerController::speedSlow() {
 
   fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
-	msg.add_type(slow ? UnrealCoojaMsg::MsgType_SPEED_NORM :
-                      UnrealCoojaMsg::MsgType_SPEED_SLOW);
+	msg.add_type(UnrealCoojaMsg::MsgType_SIMSTATE);
+	msg.add_simState(slow ?
+		UnrealCoojaMsg::SimState_NORMAL :
+		UnrealCoojaMsg::SimState_SLOW);
+
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
 
@@ -564,7 +569,8 @@ void AArdanPlayerController::speedNormal() {
 
   fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
-	msg.add_type(UnrealCoojaMsg::MsgType_SPEED_NORM);
+	msg.add_type(UnrealCoojaMsg::MsgType_SIMSTATE);
+	msg.add_simState(UnrealCoojaMsg::SimState_NORMAL);
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
 
@@ -586,7 +592,8 @@ void AArdanPlayerController::speedFast() {
 
   fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
-	msg.add_type(UnrealCoojaMsg::MsgType_SPEED_FAST);
+	msg.add_type(UnrealCoojaMsg::MsgType_SIMSTATE);
+	msg.add_simState(UnrealCoojaMsg::SimState_DOUBLE);
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
 
