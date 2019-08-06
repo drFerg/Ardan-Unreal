@@ -69,7 +69,7 @@ protected:
 	/** Input handlers for SetDestination action. */
 	void OnSetDestinationPressed();
 	void OnSetDestinationReleased();
-
+	void Record();
 	void ScrollUp();
 	void ScrollDown();
 	void StartAFire();

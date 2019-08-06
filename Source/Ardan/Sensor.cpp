@@ -244,9 +244,7 @@ void ASensor::sendLocationUpdate() {
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
 
-	int sent = 0;
-	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
-									 sent, *addr);
+
 
 
 	if (rd_kafka_produce(

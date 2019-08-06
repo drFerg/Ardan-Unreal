@@ -1,4 +1,6 @@
 #pragma once
+#include "TimeSphere.h"
+
 #include "ActorManager.generated.h"
 
 USTRUCT()
@@ -34,6 +36,8 @@ struct FObjectInfo {
 	int index;
 	UPROPERTY(SaveGame)
 	bool bisGhost = false;
+	UPROPERTY(SaveGame)
+	ATimeSphere* lastSphere;
 };
 
 USTRUCT(BlueprintType)
@@ -115,7 +119,7 @@ public:
 	void initHist();
 
 	void recordActors(float deltaTime, float timeStamp);
-	void recordPawnActors(float deltaTime, float timeStamp);
+	void recordPawnActors(float deltaTime, float timeStamp, bool displayPath);
 
 	void copyActors(FHistory* dstHistory, FHistory *srcHistory);
 	void copyPawnActors(FHistory * dstHistory, FHistory * srcHistory);

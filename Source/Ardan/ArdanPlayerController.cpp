@@ -61,7 +61,7 @@ AArdanPlayerController::AArdanPlayerController() {
 
 void AArdanPlayerController::BeginPlay() {
   Super::BeginPlay();
-	bRecording = true;
+	bRecording = false;
   conns = FRunnableConnection::create(5000, &packetQ);
   if (conns) {UE_LOG(LogNet, Log, TEXT("Runnable Connection created"));}
   else { UE_LOG(LogNet, Log, TEXT("conns failed"));}
@@ -79,11 +79,7 @@ void AArdanPlayerController::BeginPlay() {
 		}
 	}
 	UE_LOG(LogNet, Log, TEXT("Found %d cameras"), cameras.Num());
-
-	//actorManager = NewNamedObject<UActorManager>(this, FString("ActorManager"), RF_NoFlags, UActorManager::StaticClass()); 
-	actorManager = NewObject<UActorManager>();
-	actorManager->init(GetWorld(), this);
-	actorManager->initHist();
+	
 	sensorManager = new SensorManager(GetWorld(), this);
 	sensorManager->FindSensors();
 
@@ -245,7 +241,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	
 	/* Pop and set actors old location else push current location onto stack */
 	LOG(FString::Printf(TEXT("CurTime: %f"), curTime));
-	/*if (bReverse) {
+	if (bReverse) {
 		replayTime -= DeltaTime;
 		curTime -= DeltaTime;
 
@@ -277,10 +273,10 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		if (bRecording && rtick >= 0.03) {
 			rtick = 0;
 			actorManager->recordActors(DeltaTime, curTime);
-			actorManager->recordPawnActors(DeltaTime, curTime);
+			actorManager->recordPawnActors(DeltaTime, curTime, tenth >= 1.0);
 		}
 	}
-  */
+  
 	//actorManager->diff(NULL);
 	//sensorManager->DiffState(0, curTime);
 
@@ -307,7 +303,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		 if (Pawn) {
 			 FVector sourceLoc = Pawn->GetActorLocation();
 			 FRotator sourceRot = Pawn->GetActorRotation();
-			 /*ATimeSphere *ts = GetWorld()->SpawnActor<ATimeSphere>(sourceLoc, sourceRot, SpawnInfo);
+			 ATimeSphere *ts = GetWorld()->SpawnActor<ATimeSphere>(sourceLoc, sourceRot, SpawnInfo);
 			 if (timeSpheres.Num() > 0 && !reset) {
 				 DrawDebugLine(GetWorld(),
 					 ts->GetActorLocation(), timeSpheres.Top()->GetActorLocation(),
@@ -317,7 +313,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 			 if (ts != NULL) {
 				 timeSpheres.Push(ts);
 			 }
-			 else UE_LOG(LogNet, Log, TEXT("Noo"));*/
+			 else UE_LOG(LogNet, Log, TEXT("Noo"));
 		 }
 		
 		
@@ -414,7 +410,15 @@ void AArdanPlayerController::SetupInputComponent()
 	InputComponent->BindAction("TimeJumpBackward", IE_Pressed, this, &AArdanPlayerController::JumpBackwardPressed);
 
 	InputComponent->BindAction("StartFire", IE_Pressed, this, &AArdanPlayerController::StartAFire);
-	
+	InputComponent->BindAction("Record", IE_Pressed, this, &AArdanPlayerController::Record);
+}
+
+void AArdanPlayerController::Record()
+{
+	bRecording = true;
+	actorManager = NewObject<UActorManager>();
+	actorManager->init(GetWorld(), this);
+	actorManager->initHist();
 }
 
 void AArdanPlayerController::OnResetVR()

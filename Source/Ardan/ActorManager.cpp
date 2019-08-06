@@ -2,6 +2,7 @@
 #include "Ardan.h"
 #include "ActorManager.h"
 #include "ArdanUtilities.h"
+
 #include "EngineUtils.h"
 #include "UObjectGlobals.h"
 #include "CameraPawn.h"
@@ -179,7 +180,7 @@ void UActorManager::recordActors(float deltaTime, float timeStamp) {
 	}
 }
 
-void UActorManager::recordPawnActors(float deltaTime, float timeStamp) {
+void UActorManager::recordPawnActors(float deltaTime, float timeStamp, bool displayPath) {
 	// Record a single tick for all actors
 	for (auto &itr : currentPawnHistory->histMap) {
 		FObjectInfo* info = &(itr.Value);
@@ -187,8 +188,27 @@ void UActorManager::recordPawnActors(float deltaTime, float timeStamp) {
 		FTransform curTrans = info->actor->GetTransform();
 		if (info->hist.Num()) {
 			if (curTrans.Equals(info->hist.Last().transform))	continue;
+			
+			FVector sourceLoc = curTrans.GetLocation();
+			FRotator sourceRot = curTrans.GetRotation().Rotator();
+			if (displayPath) {
+				FActorSpawnParameters SpawnInfo;
+				SpawnInfo.Owner = NULL;
+				SpawnInfo.Instigator = NULL;
+				SpawnInfo.bDeferConstruction = false;
+				SpawnInfo.bNoFail = false;
+				//SpawnInfo.bNoCollisionFail = bNoCollisionFail;
+				ATimeSphere *ts = this->world->SpawnActor<ATimeSphere>(sourceLoc, sourceRot, SpawnInfo);
+				bool reset = false;
+				if (info->lastSphere && !reset) {
+					DrawDebugLine(this->world,
+						curTrans.GetLocation(), info->lastSphere->GetActorLocation(),
+						FColor(255, 0, 0), false, 60, 0, 4);
+				}
+				info->lastSphere = ts;
+				reset = false;
+			}
 		}
-		//UE_LOG(LogNet, Log, TEXT("recording..."));
 		FObjectMeta meta;
 		meta.transform = curTrans;
 		meta.velocity = ((APawn*)info->actor)->GetPendingMovementInputVector();
@@ -276,7 +296,7 @@ void UActorManager::initHist() {
 		currentHistory->histMap.Add(actor->GetName(), actorInfo);
 	}
 
-	for (TActorIterator<APawn> ActorItr(world); ActorItr; ++ActorItr) {
+	for (TActorIterator<ACharacter> ActorItr(world); ActorItr; ++ActorItr) {
 		APawn *actor = *ActorItr;
 		if (actor->GetClass() == ACameraPawn::StaticClass()) continue;
 		UE_LOG(LogNet, Log, TEXT("A: %s"), *actor->GetName());
@@ -288,6 +308,7 @@ void UActorManager::initHist() {
 		actorInfo.descendant = NULL;
 		actorInfo.index = 0;
 		actorInfo.bisGhost = false;
+		actorInfo.lastSphere = NULL;
 		//actorInfo->hist = new TArray<FObjectMeta*>();
 		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentPawnHistory->histMap.Add(actor->GetName(), actorInfo);
