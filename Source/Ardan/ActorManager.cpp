@@ -203,7 +203,8 @@ void UActorManager::recordPawnActors(float deltaTime, float timeStamp, bool disp
 				if (info->lastSphere && !reset) {
 					DrawDebugLine(this->world,
 						curTrans.GetLocation(), info->lastSphere->GetActorLocation(),
-						FColor(255, 0, 0), false, 60, 0, 4);
+						
+						info->color, false, 60, 0, 4);
 				}
 				info->lastSphere = ts;
 				reset = false;
@@ -309,6 +310,7 @@ void UActorManager::initHist() {
 		actorInfo.index = 0;
 		actorInfo.bisGhost = false;
 		actorInfo.lastSphere = NULL;
+		actorInfo.color = FColor(FMath::RandRange(0, 255), FMath::RandRange(0, 255), FMath::RandRange(0, 255));
 		//actorInfo->hist = new TArray<FObjectMeta*>();
 		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentPawnHistory->histMap.Add(actor->GetName(), actorInfo);

@@ -38,6 +38,8 @@ struct FObjectInfo {
 	bool bisGhost = false;
 	UPROPERTY(SaveGame)
 	ATimeSphere* lastSphere;
+	UPROPERTY(SaveGame)
+	FColor color;
 };
 
 USTRUCT(BlueprintType)
