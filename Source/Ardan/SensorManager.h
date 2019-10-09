@@ -35,10 +35,12 @@ public:
 	void CopyOutState(TMap<FString, FSensorHistory>* sensorHistory);
 	void CopyInState(TMap<FString, FSensorHistory>* sensorHistory);
 	void SetProducer(rd_kafka_t *rk, rd_kafka_topic_t *rkt);
+
+	TMap<int, ASensor*> sensorTable;
+
 private:
 	UWorld* world;
 	TArray<ASensor*> sensors;
-	TMap<int, ASensor*> sensorTable;
 	bool bHasHistory = false;
 	AActor *controller;
 

@@ -40,6 +40,8 @@ struct FObjectInfo {
 	ATimeSphere* lastSphere;
 	UPROPERTY(SaveGame)
 	FColor color;
+	UPROPERTY(SaveGame)
+	FVector lastLoc;
 };
 
 USTRUCT(BlueprintType)
@@ -121,7 +123,7 @@ public:
 	void initHist();
 
 	void recordActors(float deltaTime, float timeStamp);
-	void recordPawnActors(float deltaTime, float timeStamp, bool displayPath);
+	void recordPawnActors(float deltaTime, float timeStamp, bool displayPath, bool reset);
 
 	void copyActors(FHistory* dstHistory, FHistory *srcHistory);
 	void copyPawnActors(FHistory * dstHistory, FHistory * srcHistory);

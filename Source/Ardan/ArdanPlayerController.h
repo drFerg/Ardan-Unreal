@@ -40,7 +40,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Time)
 	TArray<AStaticMeshActor*> ReplayActors;
-	TArray<UParticleSystemComponent*> firePoints;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = fire)
+	TArray<FVector> firePoints;
 
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */

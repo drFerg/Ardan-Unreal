@@ -1,0 +1,72 @@
+
+Test with navigation blockers (Evacuees take longer routes to escape)
+
+LogBlueprintUserMessages: [EvacMap_C_2] 3.505551: EVACUATION TRIGGERED
+LogBlueprintUserMessages: [EvacMap_C_2] 11.192191 :Evacuees Left: 30
+LogBlueprintUserMessages: [EvacMap_C_2] 14.261945 :Evacuees Left: 29
+LogBlueprintUserMessages: [EvacMap_C_2] 17.177691 :Evacuees Left: 28
+LogBlueprintUserMessages: [EvacMap_C_2] 18.503574 :Evacuees Left: 27
+LogBlueprintUserMessages: [EvacMap_C_2] 19.81148 :Evacuees Left: 26
+LogBlueprintUserMessages: [EvacMap_C_2] 19.872362 :Evacuees Left: 25
+LogBlueprintUserMessages: [EvacMap_C_2] 20.307352 :Evacuees Left: 24
+LogBlueprintUserMessages: [EvacMap_C_2] 20.708403 :Evacuees Left: 23
+LogBlueprintUserMessages: [EvacMap_C_2] 21.181211 :Evacuees Left: 22
+LogBlueprintUserMessages: [EvacMap_C_2] 21.897881 :Evacuees Left: 21
+LogBlueprintUserMessages: [EvacMap_C_2] 23.025829 :Evacuees Left: 20
+LogBlueprintUserMessages: [EvacMap_C_2] 24.050697 :Evacuees Left: 19
+LogBlueprintUserMessages: [EvacMap_C_2] 25.281588 :Evacuees Left: 18
+LogBlueprintUserMessages: [EvacMap_C_2] 25.676285 :Evacuees Left: 17
+LogBlueprintUserMessages: [EvacMap_C_2] 25.889071 :Evacuees Left: 16
+LogBlueprintUserMessages: [EvacMap_C_2] 26.907427 :Evacuees Left: 15
+LogBlueprintUserMessages: [EvacMap_C_2] 28.592882 :Evacuees Left: 14
+LogBlueprintUserMessages: [EvacMap_C_2] 29.177238 :Evacuees Left: 13
+LogBlueprintUserMessages: [EvacMap_C_2] 29.185997 :Evacuees Left: 12
+LogBlueprintUserMessages: [EvacMap_C_2] 29.630346 :Evacuees Left: 11
+LogBlueprintUserMessages: [EvacMap_C_2] 30.830128 :Evacuees Left: 10
+LogBlueprintUserMessages: [EvacMap_C_2] 31.233337 :Evacuees Left: 9
+LogBlueprintUserMessages: [EvacMap_C_2] 31.613762 :Evacuees Left: 8
+LogBlueprintUserMessages: [EvacMap_C_2] 32.029129 :Evacuees Left: 7
+LogBlueprintUserMessages: [EvacMap_C_2] 32.347351 :Evacuees Left: 6
+LogBlueprintUserMessages: [EvacMap_C_2] 33.397423 :Evacuees Left: 5
+LogBlueprintUserMessages: [EvacMap_C_2] 34.051674 :Evacuees Left: 4
+LogBlueprintUserMessages: [EvacMap_C_2] 34.466003 :Evacuees Left: 3
+LogBlueprintUserMessages: [EvacMap_C_2] 35.526192 :Evacuees Left: 2
+LogBlueprintUserMessages: [EvacMap_C_2] 36.559647 :Evacuees Left: 1
+LogBlueprintUserMessages: [EvacMap_C_2] 37.721279 :Evacuees Left: 0
+
+
+--------------------------------------------------------------------
+Test without navigation modifiers
+
+LogBlueprintUserMessages: [EvacMap_C_2] 4.227066: EVACUATION TRIGGERED
+LogBlueprintUserMessages: [EvacMap_C_2] 11.91726 :Evacuees Left: 30
+LogBlueprintUserMessages: [EvacMap_C_2] 14.99974 :Evacuees Left: 29
+LogBlueprintUserMessages: [EvacMap_C_2] 17.962494 :Evacuees Left: 28
+LogBlueprintUserMessages: [EvacMap_C_2] 19.216715 :Evacuees Left: 27
+LogBlueprintUserMessages: [EvacMap_C_2] 20.440332 :Evacuees Left: 26
+LogBlueprintUserMessages: [EvacMap_C_2] 20.759279 :Evacuees Left: 25
+LogBlueprintUserMessages: [EvacMap_C_2] 21.183315 :Evacuees Left: 24
+LogBlueprintUserMessages: [EvacMap_C_2] 21.812134 :Evacuees Left: 23
+LogBlueprintUserMessages: [EvacMap_C_2] 21.922384 :Evacuees Left: 22
+LogBlueprintUserMessages: [EvacMap_C_2] 22.52142 :Evacuees Left: 21
+LogBlueprintUserMessages: [EvacMap_C_2] 24.079876 :Evacuees Left: 20
+LogBlueprintUserMessages: [EvacMap_C_2] 24.558441 :Evacuees Left: 19
+LogBlueprintUserMessages: [EvacMap_C_2] 24.919834 :Evacuees Left: 18
+LogBlueprintUserMessages: [EvacMap_C_2] 26.306063 :Evacuees Left: 17
+LogBlueprintUserMessages: [EvacMap_C_2] 26.773767 :Evacuees Left: 16
+LogBlueprintUserMessages: [EvacMap_C_2] 26.922281 :Evacuees Left: 15
+LogBlueprintUserMessages: [EvacMap_C_2] 27.111992 :Evacuees Left: 14
+LogBlueprintUserMessages: [EvacMap_C_2] 27.674997 :Evacuees Left: 13
+LogBlueprintUserMessages: [EvacMap_C_2] 28.074135 :Evacuees Left: 12
+LogBlueprintUserMessages: [EvacMap_C_2] 28.150509 :Evacuees Left: 11
+LogBlueprintUserMessages: [EvacMap_C_2] 28.569498 :Evacuees Left: 10
+LogBlueprintUserMessages: [EvacMap_C_2] 28.785429 :Evacuees Left: 9
+LogBlueprintUserMessages: [EvacMap_C_2] 29.188505 :Evacuees Left: 8
+LogBlueprintUserMessages: [EvacMap_C_2] 29.829535 :Evacuees Left: 7
+LogBlueprintUserMessages: [EvacMap_C_2] 30.160156 :Evacuees Left: 6
+LogBlueprintUserMessages: [EvacMap_C_2] 30.463816 :Evacuees Left: 5
+LogBlueprintUserMessages: [EvacMap_C_2] 30.840826 :Evacuees Left: 4
+LogBlueprintUserMessages: [EvacMap_C_2] 31.363609 :Evacuees Left: 3
+LogBlueprintUserMessages: [EvacMap_C_2] 31.941727 :Evacuees Left: 2
+LogBlueprintUserMessages: [EvacMap_C_2] 32.4646 :Evacuees Left: 1
+LogBlueprintUserMessages: [EvacMap_C_2] 32.846844 :Evacuees Left: 0

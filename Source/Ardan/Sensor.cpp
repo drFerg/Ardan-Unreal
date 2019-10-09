@@ -8,6 +8,8 @@
 #include "IPAddress.h"
 #include "IPv4SubnetMask.h"
 
+
+#include "Kismet/GameplayStatics.h" 
 #include "IPv4Address.h"
 #include "Sockets.h"
 #include "SocketSubsystem.h"
@@ -387,8 +389,8 @@ void ASensor::ColourSensor(int type) {
 void ASensor::DetectFire() {
 	bool fire = false;
 	TObjectIterator<AArdanPlayerController> ThePC;
-	for (UParticleSystemComponent *p: ThePC->firePoints) {
-		FVector direction = GetActorLocation() - p->GetComponentLocation();
+	for (FVector p: ThePC->firePoints) {
+		FVector direction = GetActorLocation() - p;
 		if (direction.Size() < FireDetectionRadius) {
 			//UE_LOG(LogNet, Log, TEXT("FIRE detected at sensor %d: %s"), ID, (evac_sign?"Y":"N"));
 			fire = true;

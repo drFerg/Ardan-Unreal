@@ -68,6 +68,19 @@ void SensorManager::ReceivePacket(struct pkt* pkt) {
 				500.0, colours[msg->id() % 12], false, 0.5, 0, 5.0);
 		}
 	}
+	else if (msg->type() == MsgType_TARGET) {
+		UE_LOG(LogNet, Log, TEXT("target message type, %d %d"), msg->id(), msg->target());
+		ASensor **s = sensorTable.Find(msg->id());
+		if (s == NULL) return;
+		ASensor* sensor = *s;
+		UE_LOG(LogNet, Log, TEXT("target message type2"));
+
+		ASensor **next = sensorTable.Find(msg->target());
+		if (next == NULL) return;
+		UE_LOG(LogNet, Log, TEXT("target message type3"));
+
+		sensor->nextSensor = *next;
+	}
 	else {
 		//UE_LOG(LogNet, Log, TEXT("Other message type"));
 		ASensor **s = sensorTable.Find(msg->id());

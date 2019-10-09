@@ -8,7 +8,7 @@
 ATimeSphere::ATimeSphere(const FObjectInitializer &ObjectInitializer) :Super(ObjectInitializer)
 {
     // Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = false;
 
 
     // Create and position a mesh component so we can see where our sphere is

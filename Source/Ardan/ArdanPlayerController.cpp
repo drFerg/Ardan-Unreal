@@ -20,6 +20,7 @@
 using namespace std;
 #define LOG(txt) { GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Red, txt, false); };
 
+bool pathFlag = false;
 
 static void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void *opaque) {
 	if (rkmessage->err)
@@ -273,7 +274,9 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		if (bRecording && rtick >= 0.03) {
 			rtick = 0;
 			actorManager->recordActors(DeltaTime, curTime);
-			actorManager->recordPawnActors(DeltaTime, curTime, tenth >= 1.0);
+			actorManager->recordPawnActors(DeltaTime, curTime, pathFlag, reset);
+			if (pathFlag) pathFlag = false;
+			if (reset) reset = false;
 		}
 	}
   
@@ -289,6 +292,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 					tickCount);
 		elapsed = 0;
 		tickCount = 0;
+		pathFlag = true;
 	}
 	if (!(bReplay || bReverse) && tenth >= 1.0) {
 		
@@ -299,8 +303,8 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		SpawnInfo.bDeferConstruction = false;
   	SpawnInfo.bNoFail 		= false;
 		//SpawnInfo.bNoCollisionFail = bNoCollisionFail;
-		 APawn* const Pawn = GetPawn();
-		 if (Pawn) {
+		 //APawn* const Pawn = GetPawn();
+		 /*if (Pawn) {
 			 FVector sourceLoc = Pawn->GetActorLocation();
 			 FRotator sourceRot = Pawn->GetActorRotation();
 			 ATimeSphere *ts = GetWorld()->SpawnActor<ATimeSphere>(sourceLoc, sourceRot, SpawnInfo);
@@ -313,8 +317,8 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 			 if (ts != NULL) {
 				 timeSpheres.Push(ts);
 			 }
-			 else UE_LOG(LogNet, Log, TEXT("Noo"));
-		 }
+			 else UE_LOG(LogNet, Log, TEXT("Noo"));*/
+	//}
 		
 		
 		
@@ -644,6 +648,7 @@ void AArdanPlayerController::StartAFire() {
 		// We hit something, start a fire there
 		//static ConstructorHelpers::FObjectFinder<UParticleSystem> particle (TEXT("ParticleSystem'/Game/StarterContent/Particles/P_Fire.P_Fire'"));
 		UParticleSystem *ps = ArdanUtilities::LoadObjFromPath<UParticleSystem>(TEXT("ParticleSystem'/Game/StarterContent/Particles/P_Fire.P_Fire'"));
-		firePoints.Add(UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ps, Hit.Location));// , Hit.ImpactNormal.Rotation, true);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ps, Hit.Location);
+		firePoints.Add(Hit.Location);// , Hit.ImpactNormal.Rotation, true);
 	}
 }

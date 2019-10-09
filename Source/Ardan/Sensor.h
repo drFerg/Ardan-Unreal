@@ -135,12 +135,13 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sensor)
 	bool overlay = true;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Neighbours)
+	ASensor* nextSensor;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
 	AStaticMeshActor* PIRSensor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
-	float PIRRepeatTime = 2.0;
+	float PIRRepeatTime = 5.0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
 	float FireDetectionRadius = 500.0;
@@ -163,7 +164,9 @@ public:
 	FString address = TEXT("127.0.0.1");
 
 	FSensorHistory* history;
+
 private:
+
 	UStaticMeshComponent* mesh;
 	UPROPERTY()
 	FSensorState state;
