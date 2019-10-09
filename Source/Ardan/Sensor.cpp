@@ -223,7 +223,7 @@ void ASensor::SetLed(uint8 R, uint8 G, uint8 B) {
 		if (G) evac_sign->direct_left();
 		if (B) evac_sign->direct_right();
 	}
-
+	if (R && triggerAlarmEvent) AlarmEvent();
 }
 
 void ASensor::SetSelected() {

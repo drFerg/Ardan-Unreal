@@ -164,6 +164,12 @@ public:
 	FString address = TEXT("127.0.0.1");
 
 	FSensorHistory* history;
+	UFUNCTION(BlueprintImplementableEvent, category = "Events", BlueprintCallable)
+	void AlarmEvent();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	bool triggerAlarmEvent;
+
+
 
 private:
 
