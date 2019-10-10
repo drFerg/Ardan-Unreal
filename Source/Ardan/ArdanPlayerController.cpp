@@ -198,6 +198,7 @@ void AArdanPlayerController::NewTimeline() {
 	replayTime = 0;
 	actorManager->NewTimeline();
 	sensorManager->NewTimeline();
+	UE_LOG(LogNet, Log, TEXT("%f: New timeline (evacuation)"), GetWorld()->GetRealTimeSeconds()); 
 }
 
 void AArdanPlayerController::replayPressed() {
@@ -208,6 +209,7 @@ void AArdanPlayerController::replayPressed() {
 	replayTime = 0;
 	actorManager->ResetTimelines();
 	sensorManager->Replay();
+	UE_LOG(LogNet, Log, TEXT("%f: Reset timeline (evacuation)"), GetWorld()->GetRealTimeSeconds());
 }
 
 void AArdanPlayerController::JumpForwardPressed() {
@@ -530,9 +532,6 @@ void AArdanPlayerController::Pause() {
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
 
-	int sent = 0;
-	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
-										 sent, *addr);
 
 	if (rd_kafka_produce(sensorrkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY, 
 												fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {

@@ -152,6 +152,9 @@ void UActorManager::resetPawnActors(FHistory *history) {
 			FObjectMeta *meta = &(info->hist[info->index]);
 			info->actor->SetActorEnableCollision(false);
 			info->actor->SetActorTransform(meta->transform);
+			UPawnMovementComponent *pm = ((APawn*)info->actor)->GetMovementComponent();
+			((UCharacterMovementComponent *)pm)->SetAvoidanceGroup(1);
+
 			// Apply Ghost material to old model
 			//ghostActor((AStaticMeshActor*)info->actor, 0.7 / history->level);
 		}
@@ -207,11 +210,14 @@ void UActorManager::recordPawnActors(float deltaTime, float timeStamp, bool disp
 				//	false,  				//persistent (never goes away)
 				//	60 					//point leaves a trail on moving object
 				//);
-				if (!reset) {
+				if (!FVector(0.0, 0.0, 0.0).Equals(info->lastLoc) && !reset) {
 					DrawDebugDirectionalArrow(this->world,
 						info->lastLoc, curTrans.GetLocation(), 100.0,
 						info->color, true, 0, 0, 4);
 				}
+				
+				UE_LOG(LogNet, Log, TEXT("DRAW ARROW: %s -> %s"), *info->lastLoc.ToString(), *sourceLoc.ToString());
+
  
 				info->lastLoc = sourceLoc;
 			}
@@ -302,10 +308,28 @@ void UActorManager::initHist() {
 		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentHistory->histMap.Add(actor->GetName(), actorInfo);
 	}
-	FColor color = FColor::MakeRandomColor();
+	FColor colours[12] = {
+		FColor(255, 0, 0),
+		FColor(0, 255, 0),
+		FColor(0, 0, 255),
+		FColor(255,255,0),
+		FColor(0,255,255),
+		FColor(255,0,255),
+		FColor(192,192,192),
+		FColor(128,0,0),
+		FColor(0,128,0),
+		FColor(128,0,128),
+		FColor(0,128,128),
+		FColor(0,0,128) 
+	};
+	//FColor color = FColor::MakeRandomColor();
+	FColor color = colours[colour_index % 12];
+	colour_index++;
 	for (TActorIterator<ACharacter> ActorItr(world); ActorItr; ++ActorItr) {
 		APawn *actor = *ActorItr;
 		if (actor->GetClass() == ACameraPawn::StaticClass()) continue;
+
+
 		UE_LOG(LogNet, Log, TEXT("A: %s"), *actor->GetName());
 		// Set up actorInfo object to record actor history
 		FObjectInfo actorInfo;
@@ -318,6 +342,7 @@ void UActorManager::initHist() {
 		actorInfo.lastSphere = NULL;
 		actorInfo.lastLoc = actor->GetActorLocation();
 		actorInfo.color = color;
+
 		//actorInfo->hist = new TArray<FObjectMeta*>();
 		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentPawnHistory->histMap.Add(actor->GetName(), actorInfo);

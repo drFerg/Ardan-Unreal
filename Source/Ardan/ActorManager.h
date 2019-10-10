@@ -116,6 +116,7 @@ private:
 	bool bReplay = false;
 	UPROPERTY()
 	bool bRecording = false;
+	int colour_index = 0;
 public:
 	UActorManager();
 	~UActorManager();

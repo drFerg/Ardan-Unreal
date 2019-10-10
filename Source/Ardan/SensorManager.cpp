@@ -73,11 +73,11 @@ void SensorManager::ReceivePacket(struct pkt* pkt) {
 		ASensor **s = sensorTable.Find(msg->id());
 		if (s == NULL) return;
 		ASensor* sensor = *s;
-		UE_LOG(LogNet, Log, TEXT("target message type2"));
+		UE_LOG(LogNet, Log, TEXT("target message found sensor"));
 
 		ASensor **next = sensorTable.Find(msg->target());
 		if (next == NULL) return;
-		UE_LOG(LogNet, Log, TEXT("target message type3"));
+		UE_LOG(LogNet, Log, TEXT("target message found next target"));
 
 		sensor->nextSensor = *next;
 	}
