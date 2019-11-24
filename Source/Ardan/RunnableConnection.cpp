@@ -146,7 +146,7 @@ uint32 FRunnableConnection::Run() {
 
 				pktQ->Enqueue(rkmessage); /* pass on to game-thread */
 				detectTime = FPlatformTime::Seconds();
-				UE_LOG(LogActor, Warning, TEXT("Received at: %.6f"), detectTime);
+				//UE_LOG(LogActor, Warning, TEXT("Received at: %.6f"), detectTime);
 
 			}
 			//UE_LOG(LogNet, Log, TEXT("Got msg"));
@@ -179,8 +179,10 @@ void FRunnableConnection::Stop() {
 void FRunnableConnection::Shutdown() {
 	if (Runnable) {
 		UE_LOG(LogNet, Log, TEXT("Connection Thread killed!"));
-		thread->WaitForCompletion();
+		//thread->WaitForCompletion();
 		delete Runnable;
+		UE_LOG(LogNet, Log, TEXT("Connection Thread killed dead!"));
+
 		Runnable = NULL;
 		complete = false;
 		stop = false;

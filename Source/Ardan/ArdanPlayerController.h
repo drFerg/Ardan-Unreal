@@ -41,6 +41,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Time)
 	TArray<AStaticMeshActor*> ReplayActors;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = actors)
+	TArray<APawn*> pawnActors;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = fire)
 	TArray<FVector> firePoints;
 
@@ -97,7 +100,7 @@ protected:
 	private:
 		SensorManager* sensorManager;
 		UPROPERTY()
-		UActorManager* actorManager;
+		UActorManager*	actorManager;
 		TArray<ATimeSphere*> timeSpheres;
 
 		float replayTime = 0;

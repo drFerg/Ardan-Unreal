@@ -19,7 +19,21 @@ UActorManager::~UActorManager()
 void UActorManager::init(UWorld* w, APlayerController* c) {
 	world = w;
 	controller = c;
+
+	for (TActorIterator<ACharacter> ActorItr(world); ActorItr; ++ActorItr) {
+		APawn *actor = *ActorItr;
+		if (actor->GetClass() == ACameraPawn::StaticClass()) continue;
+		allPawns.Add(actor);
+		UE_LOG(LogNet, Log, TEXT("added %f,Location,%s,%s"), world->TimeSeconds, *(actor->GetName()), *(actor->GetActorLocation().ToString()));
+
+	}
 }
+
+	void UActorManager::printActors() {
+		for (APawn *actor : allPawns) {
+			UE_LOG(LogNet, Log, TEXT("%f,Location,%s,%s"), world->TimeSeconds, *(actor->GetName()), *(actor->GetActorLocation().ToString()));
+		}
+	}
 
 void UActorManager::replayActors(FHistory *history, float timeStamp) {
 	for (auto &itr : history->histMap) {
@@ -216,7 +230,7 @@ void UActorManager::recordPawnActors(float deltaTime, float timeStamp, bool disp
 						info->color, true, 0, 0, 4);
 				}
 				
-				UE_LOG(LogNet, Log, TEXT("DRAW ARROW: %s -> %s"), *info->lastLoc.ToString(), *sourceLoc.ToString());
+				//UE_LOG(LogNet, Log, TEXT("DRAW ARROW: %s -> %s"), *info->lastLoc.ToString(), *sourceLoc.ToString());
 
  
 				info->lastLoc = sourceLoc;
@@ -288,6 +302,22 @@ void UActorManager::rewindAllPawnActors(float timeStamp) {
 void UActorManager::initHist() {
 	currentPawnHistory = new FHistory();
 	currentHistory = new FHistory();
+	FColor colours[12] = {
+		FColor(255, 0, 0),
+		FColor(0, 255, 0),
+		FColor(0, 0, 255),
+		FColor(255,255,0),
+		FColor(0,255,255),
+		FColor(255,0,255),
+		FColor(192,192,192),
+		FColor(128,0,0),
+		FColor(0,128,0),
+		FColor(128,0,128),
+		FColor(0,128,128),
+		FColor(0,0,128)
+	};
+	FColor color = colours[colour_index % 12];
+	colour_index++;
 	// Initialise and add all static mesh actors records to our history map
 	for (TActorIterator<AStaticMeshActor> ActorItr(world); ActorItr; ++ActorItr) {
 		AStaticMeshActor *actor = *ActorItr;
@@ -308,23 +338,9 @@ void UActorManager::initHist() {
 		//TArray<FObjectMeta*> *hist = new TArray<FObjectMeta*>();
 		currentHistory->histMap.Add(actor->GetName(), actorInfo);
 	}
-	FColor colours[12] = {
-		FColor(255, 0, 0),
-		FColor(0, 255, 0),
-		FColor(0, 0, 255),
-		FColor(255,255,0),
-		FColor(0,255,255),
-		FColor(255,0,255),
-		FColor(192,192,192),
-		FColor(128,0,0),
-		FColor(0,128,0),
-		FColor(128,0,128),
-		FColor(0,128,128),
-		FColor(0,0,128) 
-	};
+	
 	//FColor color = FColor::MakeRandomColor();
-	FColor color = colours[colour_index % 12];
-	colour_index++;
+
 	for (TActorIterator<ACharacter> ActorItr(world); ActorItr; ++ActorItr) {
 		APawn *actor = *ActorItr;
 		if (actor->GetClass() == ACameraPawn::StaticClass()) continue;

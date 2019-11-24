@@ -141,7 +141,7 @@ public:
 	AStaticMeshActor* PIRSensor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
-	float PIRRepeatTime = 5.0;
+	float PIRRepeatTime = 2.0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AttachedSensors)
 	float FireDetectionRadius = 500.0;
@@ -196,4 +196,5 @@ private:
 	rd_kafka_topic_t *rkt;  /* Topic object */
 	void sendMsgToSim(UnrealCoojaMsg::MsgType type);
 	double detectTime = 0;
+	bool sent = false;
 };

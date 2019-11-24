@@ -6,6 +6,7 @@
 #include "Runtime/Engine/Classes/Components/DecalComponent.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "ArdanSave.h"
 #include "Sensor.h"
 #include "DrawDebugHelpers.h"
@@ -47,25 +48,25 @@ AArdanPlayerController::AArdanPlayerController() {
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
 	
   /* Networking setup */
-	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
-	socket = sockSubSystem->CreateSocket(NAME_DGram, TEXT("UDPCONN2"), true);
-	if (socket) UE_LOG(LogNet, Log, TEXT("Created Socket"));
-	socket->SetReceiveBufferSize(RecvSize, RecvSize);
-	socket->SetSendBufferSize(SendSize, SendSize);
+	//sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+	//socket = sockSubSystem->CreateSocket(NAME_DGram, TEXT("UDPCONN2"), true);
+	//if (socket) UE_LOG(LogNet, Log, TEXT("Created Socket"));
+	//socket->SetReceiveBufferSize(RecvSize, RecvSize);
+	//socket->SetSendBufferSize(SendSize, SendSize);
 
 	/* Set up destination address:port to send Cooja messages to */
-	FIPv4Address::Parse(address, ip);
-	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
-	addr->SetIp(ip.Value);
-	addr->SetPort(port);
+	//FIPv4Address::Parse(address, ip);
+	//addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+	//addr->SetIp(ip.Value);
+	//addr->SetPort(port);
 }
 
 void AArdanPlayerController::BeginPlay() {
   Super::BeginPlay();
 	bRecording = false;
   conns = FRunnableConnection::create(5000, &packetQ);
-  if (conns) {UE_LOG(LogNet, Log, TEXT("Runnable Connection created"));}
-  else { UE_LOG(LogNet, Log, TEXT("conns failed"));}
+  if (conns) {UE_LOG(LogNet, Log, TEXT("Kafka connection created"));}
+  else { UE_LOG(LogNet, Log, TEXT("Kafka connection setup failed"));}
 
 
 	TSubclassOf<ACameraActor> ClassToFind;
@@ -74,7 +75,7 @@ void AArdanPlayerController::BeginPlay() {
 	for(TActorIterator<AActor> It(GetWorld(), ACameraActor::StaticClass()); It; ++It)
 	{
 		ACameraActor* Actor = (ACameraActor*)*It;
-		if(!Actor->IsPendingKill()) {
+		if(!Actor->IsPendingKill() && !Actor->GetName().Equals("CameraActor_0")) {
 			cameras.Add(Actor);
       Actor->SetTickableWhenPaused(true);
 		}
@@ -176,6 +177,7 @@ void AArdanPlayerController::BeginPlay() {
 }
 
 void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	packetQ.Empty();
 	if (rk) {
 		rd_kafka_destroy(rk);
 	}
@@ -198,7 +200,7 @@ void AArdanPlayerController::NewTimeline() {
 	replayTime = 0;
 	actorManager->NewTimeline();
 	sensorManager->NewTimeline();
-	UE_LOG(LogNet, Log, TEXT("%f: New timeline (evacuation)"), GetWorld()->GetRealTimeSeconds()); 
+	UE_LOG(LogNet, Log, TEXT("LogBlueprintUserMessages: [EvacMap_C_0] %s: Evacuation New timeline"), *(UKismetStringLibrary::TimeSecondsToString(GetWorld()->GetTimeSeconds())));
 }
 
 void AArdanPlayerController::replayPressed() {
@@ -209,7 +211,7 @@ void AArdanPlayerController::replayPressed() {
 	replayTime = 0;
 	actorManager->ResetTimelines();
 	sensorManager->Replay();
-	UE_LOG(LogNet, Log, TEXT("%f: Reset timeline (evacuation)"), GetWorld()->GetRealTimeSeconds());
+	UE_LOG(LogNet, Log, TEXT("LogBlueprintUserMessages: [EvacMap_C_0] %s: Evacuation Reset timeline"), *(UKismetStringLibrary::TimeSecondsToString(GetWorld()->GetTimeSeconds())));
 }
 
 void AArdanPlayerController::JumpForwardPressed() {
@@ -241,7 +243,8 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	tenth += DeltaTime;
 	rtick += DeltaTime;
 
-	
+	rd_kafka_poll(rk, 0/*non-blocking*/);
+
 	/* Pop and set actors old location else push current location onto stack */
 	LOG(FString::Printf(TEXT("CurTime: %f"), curTime));
 	if (bReverse) {
@@ -295,6 +298,9 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		elapsed = 0;
 		tickCount = 0;
 		pathFlag = true;
+		for (APawn *actor : pawnActors) {
+			UE_LOG(LogNet, Log, TEXT("%f,Location,%s,%s"), GetWorld()->TimeSeconds, *(actor->GetName()), *(actor->GetActorLocation().ToString()));
+		}
 	}
 	if (!(bReplay || bReverse) && tenth >= 1.0) {
 		
@@ -513,6 +519,8 @@ void AArdanPlayerController::reverseReleased() {
 void AArdanPlayerController::NextCamera() {
 	if (cameras.Num() == 0) return;
 	this->SetViewTargetWithBlend((ACameraActor *)cameras[currentCam], SmoothBlendTime);
+	UE_LOG(LogNet, Log, TEXT("camera %s"), *cameras[currentCam]->GetName());
+
 	currentCam = (currentCam + 1 ) % cameras.Num();
 }
 
@@ -557,9 +565,7 @@ void AArdanPlayerController::speedSlow() {
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
 
-	int sent = 0;
-	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
-										 sent, *addr);
+	
 	if (rd_kafka_produce(sensorrkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
 		fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
 		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(sensorrkt),
@@ -581,9 +587,7 @@ void AArdanPlayerController::speedNormal() {
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
 
-	int sent = 0;
-	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
-										 sent, *addr);
+	
 	if (rd_kafka_produce(sensorrkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
 		fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
 		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(sensorrkt),
@@ -595,7 +599,7 @@ void AArdanPlayerController::speedNormal() {
 
 void AArdanPlayerController::speedFast() {
   UE_LOG(LogNet, Log, TEXT("Speed at 2.0"));
-  UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 5.0);
+  UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 2.0);
 
   fbb.Clear();
 	UnrealCoojaMsg::MessageBuilder msg(fbb);
@@ -604,9 +608,7 @@ void AArdanPlayerController::speedFast() {
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
 
-	int sent = 0;
-	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
-										 sent, *addr);
+
 	if (rd_kafka_produce(sensorrkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
 		fbb.GetBufferPointer(), fbb.GetSize(), NULL, 0, NULL) == -1) {
 		fprintf(stderr, "%% Failed to produce to topic %s: %s\n", rd_kafka_topic_name(sensorrkt),

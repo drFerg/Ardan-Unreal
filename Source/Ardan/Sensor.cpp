@@ -35,7 +35,8 @@ void ASensor::sendMsgToSim(MsgType type) {
 	msg.add_type(type);
 	auto mloc = msg.Finish();
 	fbb.Finish(mloc);
-
+	detectTime = FPlatformTime::Seconds();
+	sent = true;
 	//int sent = 0;
 //	bool successful = socket->SendTo(fbb.GetBufferPointer(), fbb.GetSize(),
 	//	sent, *addr);
@@ -83,7 +84,6 @@ void ASensor::OnBeginOverlap(class AActor* OverlappedActor, class AActor* otherA
 	
 	if (!active) return;
 	sendMsgToSim(MsgType_PIR);
-	detectTime = FPlatformTime::Seconds();
 
 	//double end = FPlatformTime::Seconds();
 	//UE_LOG(LogActor, Warning, TEXT("Send delay %d: %.6f Start: %.6f"), ID, end - detectTime, detectTime);
@@ -113,11 +113,11 @@ ASensor::ASensor() {
 	PrimaryActorTick.bCanEverTick = true;
 
 	/* Networking setup */
-	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
-	socket = sockSubSystem->CreateSocket(NAME_DGram, TEXT("UDPCONN2"), true);
-	if (socket) UE_LOG(LogNet, Log, TEXT("Created Socket"));
-	socket->SetReceiveBufferSize(RecvSize, RecvSize);
-	socket->SetSendBufferSize(SendSize, SendSize);
+//	sockSubSystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+	//socket = sockSubSystem->CreateSocket(NAME_DGram, TEXT("UDPCONN2"), true);
+//	if (socket) UE_LOG(LogNet, Log, TEXT("Created Socket"));
+	//socket->SetReceiveBufferSize(RecvSize, RecvSize);
+	//socket->SetSendBufferSize(SendSize, SendSize);
 }
 
 void ASensor::SetProducer(rd_kafka_t * new_rk, rd_kafka_topic_t * new_rkt) {
@@ -128,14 +128,6 @@ void ASensor::SetProducer(rd_kafka_t * new_rk, rd_kafka_topic_t * new_rkt) {
 void ASensor::BeginPlay() {
 	Super::BeginPlay();
 	
-	/* Set up destination address:port to send Cooja messages to */
-	FIPv4Address::Parse(address, ip);
-	addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
-	addr->SetIp(ip.Value);
-	addr->SetPort(port);
-
-
-
 	mesh = (UStaticMeshComponent*) this->GetComponentByClass(UStaticMeshComponent::StaticClass());
 	if (mesh) {
 		UE_LOG(LogNet, Log, TEXT("SensorName: %s"), *(mesh->GetName()));
@@ -191,7 +183,6 @@ void ASensor::Tick(float DeltaTime) {
 	if (activeTimer > PIRRepeatTime) {
 		active = true;
 		activeTimer = 0;
-		DetectFire();
 	}
 }
 
@@ -200,16 +191,24 @@ void ASensor::SetReplayMode(bool on) {
 }
 void ASensor::Led(int32 led, bool on) {
 	if (led > 3 && led < 0) return;
+	UE_LOG(LogNet, Log, TEXT("%f, Sensor %d, light, %d"), GetWorld()->TimeSeconds, ID, (on ? 1:0));
+
 	Leds[led]->SetIntensity(on ? LEDON : LEDOFF);
 }
 
 void ASensor::SetLed(uint8 R, uint8 G, uint8 B) {
+	UE_LOG(LogNet, Log, TEXT("%f, Sensor %d, light, %d"), GetWorld()->TimeSeconds, ID, (R ? 1 : 0));
+
 	state.R = R;
 	state.G = G;
 	state.B = B;
-	Leds[0]->SetIntensity(R ? LEDON : LEDOFF);
-	Leds[1]->SetIntensity(G ? LEDON : LEDOFF);
-	Leds[2]->SetIntensity(B ? LEDON : LEDOFF);
+	if (Leds.Num() == 3) {
+
+		Leds[0]->SetIntensity(R ? LEDON : LEDOFF);
+		Leds[1]->SetIntensity(G ? LEDON : LEDOFF);
+		Leds[2]->SetIntensity(B ? LEDON : LEDOFF);
+	}
+
 	if (Light1) Light1->GetLightComponent()->SetIntensity(R ? LEDON: LEDOFF);
 	if (Light2) Light2->GetLightComponent()->SetIntensity(R ? LEDON: LEDOFF);
 	if (Light3) Light3->GetLightComponent()->SetIntensity(R ? LEDON: LEDOFF);
@@ -278,9 +277,13 @@ void ASensor::sendLocationUpdate() {
 
 void ASensor::ReceivePacket(const UnrealCoojaMsg::Message* msg) {
 	if (msg->type() == MsgType_LED) {
-		double end = FPlatformTime::Seconds();
-		UE_LOG(LogActor, Warning, TEXT("Sensor %d RTT: %.6f end: %.6f"), ID, end - detectTime, end);
+		if (sent) {
+			double end = FPlatformTime::Seconds();
+			UE_LOG(LogActor, Warning, TEXT("%f, Sensor %d RTT: %.6f end: %.6f"), GetWorld()->TimeSeconds, ID, end - detectTime, end);
+		}
 		SetLed(msg->led()->Get(0), msg->led()->Get(1), msg->led()->Get(2));
+		sent = false;
+
 	}
 	else if (msg->type() == MsgType_RADIO_DUTY) {
 		state.radioDuty = msg->node()->Get(ID)->radioOnRatio();

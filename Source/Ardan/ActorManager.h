@@ -104,6 +104,7 @@ public:
 	FHistory* currentHistory;
 	FHistory* currentPawnHistory;
 	TArray<FObjectMeta> stream;
+	TArray<APawn*> allPawns;
 private:
 	UPROPERTY()
 	UWorld* world;
@@ -122,7 +123,7 @@ public:
 	~UActorManager();
 	void init(UWorld* w, APlayerController* c);
 	void initHist();
-
+	void printActors();
 	void recordActors(float deltaTime, float timeStamp);
 	void recordPawnActors(float deltaTime, float timeStamp, bool displayPath, bool reset);
 
