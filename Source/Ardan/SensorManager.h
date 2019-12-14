@@ -43,6 +43,8 @@ private:
 	TArray<ASensor*> sensors;
 	bool bHasHistory = false;
 	AActor *controller;
+	long startTime = 0;
+	bool hasStartTime = false;
 
 	FColor colours[12] = { FColor(255, 0, 0),
 		FColor(0, 255, 0),

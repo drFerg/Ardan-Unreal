@@ -5,6 +5,7 @@
 #include "UObjectGlobals.h"
 #include "EngineUtils.h"
 #include "DrawDebugHelpers.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "RunnableConnection.h"
 #include <vector>
 #include "flatbuffers/c/unrealpkts_generated.h"
@@ -46,8 +47,15 @@ void SensorManager::ReceivePacket(struct pkt* pkt) {
 	auto msg = GetMessage(pkt->data);
 	//UE_LOG(LogNet, Log, TEXT("Good buffer type %d"), msg->type());
 
+	if (msg->type() == MsgType_TSTAMP) {
+		if (!hasStartTime) {
+			hasStartTime = true;
+			startTime = msg->tstamp();
+		}
+		UE_LOG(LogNet, Log, TEXT("SYNC, %lu, %s"), msg->tstamp() - startTime, *(UKismetStringLibrary::TimeSecondsToString(this->world->GetTimeSeconds())));
+	}
 	/* Display radio event */
-	if (msg->type() == MsgType_RADIO) {
+	else if (msg->type() == MsgType_RADIO) {
 		//UE_LOG(LogNet, Log, TEXT("Got a radio message"));
 
 		ASensor **s = sensorTable.Find(msg->id());

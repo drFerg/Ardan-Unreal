@@ -173,7 +173,7 @@ void AArdanPlayerController::BeginPlay() {
 
 
 
-	rd_kafka_poll(rk, 0/*non-blocking*/);
+	rd_kafka_poll(sensorrk, 0/*non-blocking*/);
 }
 
 void AArdanPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
@@ -243,7 +243,7 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 	tenth += DeltaTime;
 	rtick += DeltaTime;
 
-	rd_kafka_poll(rk, 0/*non-blocking*/);
+	rd_kafka_poll(sensorrk, 0/*non-blocking*/);
 
 	/* Pop and set actors old location else push current location onto stack */
 	LOG(FString::Printf(TEXT("CurTime: %f"), curTime));
@@ -298,9 +298,9 @@ void AArdanPlayerController::PlayerTick(float DeltaTime) {
 		elapsed = 0;
 		tickCount = 0;
 		pathFlag = true;
-		for (APawn *actor : pawnActors) {
-			UE_LOG(LogNet, Log, TEXT("%f,Location,%s,%s"), GetWorld()->TimeSeconds, *(actor->GetName()), *(actor->GetActorLocation().ToString()));
-		}
+		//for (APawn *actor : pawnActors) {
+		//	UE_LOG(LogNet, Log, TEXT("%f,Location,%s,%s"), GetWorld()->TimeSeconds, *(actor->GetName()), *(actor->GetActorLocation().ToString()));
+		//}
 	}
 	if (!(bReplay || bReverse) && tenth >= 1.0) {
 		
@@ -547,7 +547,7 @@ void AArdanPlayerController::Pause() {
 			rd_kafka_err2str(rd_kafka_last_error()));
 		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
 	}
-	rd_kafka_poll(rk, 0);
+	rd_kafka_poll(sensorrk, 0);
 
 }
 
@@ -572,7 +572,7 @@ void AArdanPlayerController::speedSlow() {
 			rd_kafka_err2str(rd_kafka_last_error()));
 		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
 	}
-	rd_kafka_poll(rk, 0);
+	rd_kafka_poll(sensorrk, 0);
   slow = !slow;
 }
 
@@ -594,7 +594,7 @@ void AArdanPlayerController::speedNormal() {
 			rd_kafka_err2str(rd_kafka_last_error()));
 		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
 	}
-	rd_kafka_poll(rk, 0);
+	rd_kafka_poll(sensorrk, 0);
 }
 
 void AArdanPlayerController::speedFast() {
@@ -615,7 +615,7 @@ void AArdanPlayerController::speedFast() {
 			rd_kafka_err2str(rd_kafka_last_error()));
 		UE_LOG(LogNet, Log, TEXT("--KAFKAFAIL--"));
 	}
-	rd_kafka_poll(rk, 0);
+	rd_kafka_poll(sensorrk, 0);
 }
 
 void AArdanPlayerController::ScrollUp() {
